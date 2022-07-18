@@ -22,5 +22,10 @@ ps:After logging out we stay in menu
 2. user send file
 3. user send FileFinished
 
-## DB
-use msl
+## Reacts
+1. user send react
+2. server send "ReactSuc" or "ReactFail"
+
+## Ban
+1. user send ban req
+2. server send "BanSuc" or "BanFail"

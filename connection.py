@@ -2,7 +2,7 @@ import socket
 from server import HOST, PORT
 
 is_logged_in = False
-username = None
+token = None
 
 
 def get_terminal_input(
@@ -51,8 +51,109 @@ def send_file(file_path: str, socket) -> None:
     socket.sendall(b"FileFinished")
 
 
+def unstrike_user_routine(socket):
+    target_username = get_terminal_input("", [], "username: ", str)
+    send_message(socket, f"Unstrike {token} {target_username}")
+
+    response = get_network_response(socket)
+    if response == "UnstrikeSuc":
+        print("Unstriking User Sucessfull")
+    elif response == "UnstrikeFail":
+        print("Unstriking User Failed")
+
+
+def ban_user_routine(socket):
+    video_id = get_terminal_input("", [], "Video id: ", int)
+    send_message(socket, f"Ban {token} {video_id}")
+
+    response = get_network_response(socket)
+    if response == "BanSuc":
+        print("Banning video Sucessfull")
+    elif response == "BanFail":
+        print("Banning video Failed")
+
+
+def comment_on_video_routine(socket):
+    comment = get_terminal_input("", [], "Your Comment: ", str)
+    send_message(socket, f"CommentVideo {token} {comment}")
+
+    response = get_network_response(socket)
+    if response == "ReactSuc":
+        print("Comment Submitted")
+    elif response == "ReactFail":
+        print("Comment Fail")
+
+
+def dislike_video_routine(socket):
+    video_id = get_terminal_input("", [], "Video id: ", int)
+    send_message(socket, f"DisLike {token} {video_id}")
+
+    response = get_network_response(socket)
+    if response == "ReactSuc":
+        print("DisLike Submitted")
+    elif response == "ReactFail":
+        print("DisLike Fail")
+
+
+def like_video_routine(socket):
+    video_id = get_terminal_input("", [], "Video id: ", int)
+    send_message(socket, f"Like {token} {video_id}")
+
+    response = get_network_response(socket)
+    if response == "ReactSuc":
+        print("Like Submitted")
+    elif response == "ReactFail":
+        print("Like Fail")
+
+
+def upload_file_routine(socket):
+    send_message(socket, f"UploadFile")
+    video_path = get_terminal_input("", [], "Video Path: ", str)
+    send_file(video_path, socket)
+
+
+def logout_routine(socket):
+    global is_logged_in, token
+
+    send_message(socket, f"Logout {token}")
+    response = get_network_response(socket)
+    if response == "LogoutSuc":
+        print("Logout Succesfull")
+        is_logged_in = False
+        token = None
+    elif response == "LogoutFail":
+        print("Logout failed")
+
+
+def signup_routine(socket):
+    global is_logged_in, token
+
+    get_and_send_singup_info(socket)
+    response = get_network_response(socket).split()
+    if response[0] == "SingupSuc":
+        print("Signup Succesfull!")
+        is_logged_in = True
+        token = response[1]
+    elif response[0] == "SingupFail":
+        print("Signup Failed!")
+
+
+def login_routine(socket):
+    global is_logged_in, token
+
+    get_and_send_login_info(socket)
+
+    response = get_network_response(socket).split()
+    if response[0] == "LoginSuc":
+        print("Login Succesfull!")
+        is_logged_in = True
+        token = response[1]
+    elif response[0] == "LoginFail":
+        print("Login Failed!")
+
+
 def user_thread(socket):
-    global is_logged_in, username
+    global is_logged_in, token
 
     if is_logged_in:
         inp = get_terminal_input(
@@ -63,65 +164,42 @@ def user_thread(socket):
                 "Like video",
                 "DisLike video",
                 "Comment On video",
-                "GetAllVideos",
                 "Ban Video",
                 "Unstrike User",
+                "GetAllVideos",
             ],
         )
 
         if inp == 1:
-            send_message(socket, f"Logout {username}")
-            if get_network_response(socket) == "LogoutSuc":
-                print("Logout Succesfull")
-                is_logged_in = False
-                username = None
+            logout_routine(socket)
 
         elif inp == 2:
-            send_message(socket, f"UploadFile")
-            video_path = get_terminal_input("", [], "Video Path: ", str)
-            send_file(video_path, socket)
-        
+            upload_file_routine(socket)
+
+        # Reacts
         elif inp == 3:
-            video_id = get_terminal_input("", [], "Video id: ", int)
-            send_message(socket, f"Like {username} {video_id}")
+            like_video_routine(socket)
         elif inp == 4:
-            video_id = get_terminal_input("", [], "Video id: ", int)
-            send_message(socket, f"DisLike {username} {video_id}")
+            dislike_video_routine(socket)
         elif inp == 5:
-            comment = get_terminal_input("", [], "Your Comment: ", str)
-            send_message(socket, f"CommentVideo {username} {comment}")
+            comment_on_video_routine(socket)
+        # ---------------------------
+
         elif inp == 6:
+            ban_user_routine(socket)
+        elif inp == 7:
+            unstrike_user_routine(socket)
+        elif inp == 8:
             send_message(socket, "GetAllVideos")
             print(get_network_response(socket))
-        elif inp == 7:
-            video_id = get_terminal_input("", [], "Video id: ", int)
-            send_message(socket, f"Ban {username} {video_id}")
-        elif inp == 8:
-            target_username = get_terminal_input("", [], "username: ", str)
-            send_message(socket, f"Unstrike {username} {target_username}")
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
         if inp == 1:
-            get_and_send_login_info(socket)
-
-            response = get_network_response(socket).split()
-            if response[0] == "LoginSuc":
-                print("Login Succesfull!")
-                is_logged_in = True
-                username = response[1]
-            elif response[0] == "LoginFail":
-                print("Login Failed!")
+            login_routine(socket)
 
         elif inp == 2:
-            get_and_send_singup_info(socket)
-            response = get_network_response(socket).split()
-            if response[0] == "SingupSuc":
-                print("Signup Succesfull!")
-                is_logged_in = True
-                username = response[1]
-            elif response[0] == "SingupFail":
-                print("Signup Failed!")
+            signup_routine(socket)
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
