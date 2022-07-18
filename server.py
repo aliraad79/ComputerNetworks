@@ -5,7 +5,13 @@ from threading import Thread
 from typing import List, Tuple
 from dotenv import load_dotenv
 
-from auth import User, authenticate_user, logout_user, signup_user
+from users import (
+    User,
+    authenticate_user,
+    create_manager_account,
+    logout_user,
+    signup_user,
+)
 from video import Video
 
 
@@ -85,6 +91,9 @@ def thread_runner(conn: socket.socket):
         elif req_type in ["Like", "DisLike", "CommentVideo"]:
             handle_user_reacts(conn, data, req_type)
 
+        elif req_type == "GetAllVideos":
+            conn.sendall(b"Videos:\n" + b"\n".join([str(i) for i in videos]))
+
         elif req_type == "UploadFile":
             with open("temp", "wb") as file:
                 while True:
@@ -107,4 +116,5 @@ def accept_connections():
 
 
 if __name__ == "__main__":
+    create_manager_account(os.getenv("Manger_Username"), os.getenv("Manager_Password"))
     Thread(target=accept_connections).start()

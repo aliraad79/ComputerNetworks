@@ -1,5 +1,6 @@
 ids = 0
 
+
 class Video:
     def __init__(self, file, owner=None) -> None:
         self.id = ids
@@ -13,3 +14,6 @@ class Video:
 
     def add_comment(self, comment):
         self.comments.append(comment)
+
+    def __str__(self) -> str:
+        return f"Video {self.id} {self.likes}|{self.dislikes} Comments: " + "/".join(self.comments)
