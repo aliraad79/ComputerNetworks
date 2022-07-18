@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from users import (
     User,
-    authenticate_user,
+    login_user,
     create_manager_account,
     logout_user,
     signup_user,
@@ -64,15 +64,20 @@ def handle_user_reacts(conn, data, req_type):
 def handle_user_auth(conn, data, req_type):
     if req_type == "Login":
         user_name, password = parse_login_string(data)
-        user = authenticate_user(user_name, password)
+        user = login_user(user_name, password, users)
         if user:
-            conn.sendall(b"LoginSuc")
+            conn.sendall(b"LoginSuc " + bytes(user.id, "utf-8"))
+        else:
+            conn.sendall(b"LoginFail")
 
     elif req_type == "Signup":
         user_name, password, user_type = parse_signup_string(data)
-        user = signup_user(user_name, password, user_type)
+        user = signup_user(user_name, password, user_type, users)
+        print(user.id)
         if user:
-            conn.sendall(b"SingupSuc")
+            conn.sendall(b"SingupSuc " + bytes(user.id, "utf-8"))
+        else:
+            conn.sendall(b"SingupFail")
 
     elif req_type == "Logout":
         conn.sendall(b"LogoutSuc")

@@ -30,7 +30,6 @@ def get_and_send_login_info(socket):
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Login {username} {password}")
-    return username
 
 
 def get_and_send_singup_info(socket):
@@ -40,7 +39,6 @@ def get_and_send_singup_info(socket):
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Signup {username} {password} {usertype}")
-    return username
 
 
 def send_file(file_path: str, socket) -> None:
@@ -105,18 +103,25 @@ def user_thread(socket):
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
         if inp == 1:
-            _username = get_and_send_login_info(socket)
-            if get_network_response(socket) == "LoginSuc":
+            get_and_send_login_info(socket)
+
+            response = get_network_response(socket).split()
+            if response[0] == "LoginSuc":
                 print("Login Succesfull!")
                 is_logged_in = True
-                username = _username
+                username = response[1]
+            elif response[0] == "LoginFail":
+                print("Login Failed!")
 
         elif inp == 2:
-            _username = get_and_send_singup_info(socket)
-            if get_network_response(socket) == "SingupSuc":
+            get_and_send_singup_info(socket)
+            response = get_network_response(socket).split()
+            if response[0] == "SingupSuc":
                 print("Signup Succesfull!")
                 is_logged_in = True
-                username = _username
+                username = response[1]
+            elif response[0] == "SingupFail":
+                print("Signup Failed!")
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
