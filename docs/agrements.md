@@ -1,14 +1,16 @@
 ## Auth
 Login for every kind of users have two step verification
 1. User Send "Login <username> <password>"
-2. Server send back "LoginSuc"
+2. Server send back "LoginSuc <token>"
+   1. if not success send back "LoginFail"
 
 Signup for every kind of users have two step verification
 1. User Send "Singup <username> <password> <type>"
    1. type : normal user=1 admin=2 manager=3
-2. Server send back "SingupSuc"
+2. Server send back "SingupSuc <token>"
+   1. if not success send back "SignUpFail"
 
-Signup for every kind of users have two step verification
+Logout for every kind of users have two step verification
 1. User Send "Logout <username>"
 2. Server send back "LogoutSuc"
 ps:After logging out we stay in menu
