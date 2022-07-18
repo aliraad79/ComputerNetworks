@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List
 
 
 @dataclass
@@ -18,26 +17,16 @@ class User:
         return cls(username, password, user_type)
 
 
-users: List[User] = []
-
-
 def authenticate_user(username: str, password: str) -> User:
     return User.login_user(username, password)
 
 
 def signup_user(username: str, password: str, user_type: int) -> User:
-    new_user = User.signup_user(username, password, user_type)
-    users.append(new_user)
-    return new_user
+    return User.signup_user(username, password, user_type)
 
 
-def logout_user(username: str) -> User:
-    user = find_user(username)
-    user.is_Logged_in = True
-    return user
-
-
-def find_user(username: str):
+def logout_user(username: str, users):
     for i in users:
         if i.username == username:
-            return i
+            i.is_Logged_in = True
+            break
