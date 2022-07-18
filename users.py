@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 class User:
     username: str
     password: str
-    type: bool = field(init=False)
-    is_Logged_in: bool = field(init=False)
+    type: bool = field(default=0)
+    is_Logged_in: bool = field(default=False)
 
     @classmethod
     def login_user(cls, username, password):
@@ -30,3 +30,6 @@ def logout_user(username: str, users):
         if i.username == username:
             i.is_Logged_in = True
             break
+
+def create_manager_account(username,password):
+    return User(username,password,3)

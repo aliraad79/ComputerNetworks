@@ -57,7 +57,19 @@ def user_thread(socket):
     global is_logged_in, username
 
     if is_logged_in:
-        inp = get_terminal_input("Welcome To Wetube", ["Logout", "Upload Video"])
+        inp = get_terminal_input(
+            "Welcome To Wetube",
+            [
+                "Logout",
+                "Upload Video",
+                "Like video",
+                "DisLike video",
+                "Comment On video",
+                "GetAllVideos",
+                "Ban Video",
+                "Unstrike User",
+            ],
+        )
 
         if inp == 1:
             send_message(socket, f"Logout {username}")
@@ -70,6 +82,26 @@ def user_thread(socket):
             send_message(socket, f"UploadFile")
             video_path = get_terminal_input("", [], "Video Path: ", str)
             send_file(video_path, socket)
+        
+        elif inp == 3:
+            video_id = get_terminal_input("", [], "Video id: ", int)
+            send_message(socket, f"Like {username} {video_id}")
+        elif inp == 4:
+            video_id = get_terminal_input("", [], "Video id: ", int)
+            send_message(socket, f"DisLike {username} {video_id}")
+        elif inp == 5:
+            comment = get_terminal_input("", [], "Your Comment: ", str)
+            send_message(socket, f"CommentVideo {username} {comment}")
+        elif inp == 6:
+            send_message(socket, "GetAllVideos")
+            print(get_network_response(socket))
+        elif inp == 7:
+            video_id = get_terminal_input("", [], "Video id: ", int)
+            send_message(socket, f"Ban {username} {video_id}")
+        elif inp == 8:
+            target_username = get_terminal_input("", [], "username: ", str)
+            send_message(socket, f"Unstrike {username} {target_username}")
+
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
         if inp == 1:
