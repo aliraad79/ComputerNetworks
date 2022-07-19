@@ -13,13 +13,15 @@ from users import (
     is_user_loggeed_in,
     is_user_admin_or_manager,
 )
-from video import Video
+from video import Video, add_video
 from serilizers import (
     parse_ban_string,
     parse_react_string,
     parse_login_string,
+    parse_logout_string,
     parse_signup_string,
     parse_unstrike_string,
+    parse_video_string,
 )
 
 
@@ -30,16 +32,16 @@ PORT = int(os.getenv("PORT"))
 
 
 def handle_user_reacts(conn, data, req_type):
-    token, video_id = parse_react_string(data)
+    token, video_name = parse_react_string(data)
     if is_user_loggeed_in(token):
-        video = Video.get_video(video_id)
+        video = Video.get_video(video_name)
 
         if req_type == "Like":
             video.likes += 1
         elif req_type == "DisLike":
             video.dislikes += 1
         elif req_type == "CommentVideo":
-            video.add_comment(User.get_user(token), data.split()[3:])
+            video.add_comment(User.get_user(token), ''.join(data.split()[3:]))
 
         conn.sendall(b"ReactSuc")
     else:
@@ -48,26 +50,50 @@ def handle_user_reacts(conn, data, req_type):
 
 def handle_user_auth(conn, data, req_type):
     if req_type == "Login":
-        user_name, password = parse_login_string(data)
-        user = login_user(user_name, password)
+        username, password = parse_login_string(data)
+        user = login_user(username, password)
         if user:
             conn.sendall(b"LoginSuc " + bytes(user.id, "utf-8"))
         else:
             conn.sendall(b"LoginFail")
 
     elif req_type == "Signup":
-        user_name, password, user_type = parse_signup_string(data)
-        user = signup_user(user_name, password, user_type)
+        username, password, user_type = parse_signup_string(data)
+        user = signup_user(username, password, user_type)
         if user:
             conn.sendall(b"SingupSuc " + bytes(user.id, "utf-8"))
         else:
             conn.sendall(b"SingupFail")
 
     elif req_type == "Logout":
-        if logout_user(data[1]):
+        token = parse_logout_string(data)
+        if logout_user(token):
             conn.sendall(b"LogoutSuc")
         else:
             conn.sendall(b"LogoutFail")
+
+
+def handle_video_uploading(conn, data):
+    token, video_name = parse_video_string(data)
+    user = User.get_user(token)
+    if user:
+        conn.sendall(b"Upload")
+        with open(f"videos/{video_name}", "wb") as file:
+            while True:
+                bytes_read = conn.recv(1024)
+                if not bytes_read:
+                    break
+                try:
+                    if bytes_read.decode("utf-8") == "VideoFinished":
+                        break
+                except:
+                    pass
+
+                file.write(bytes_read)
+
+            add_video(Video(video_name, user))
+    else:
+        conn.sendall(b"UploadFail")
 
 
 def thread_runner(conn: socket.socket):
@@ -85,20 +111,15 @@ def thread_runner(conn: socket.socket):
 
         elif req_type == "GetAllVideos":
             videos = Video.get_all()
-            conn.sendall(b"Videos:\n" + b"\n".join(videos))
+            conn.sendall(bytes(videos, "utf-8"))
 
-        elif req_type == "UploadFile":
-            with open("temp", "wb") as file:
-                while True:
-                    bytes_read = conn.recv(1024)
-                    if not bytes_read or bytes_read.decode("utf-8") == "FileFinished":
-                        break
+        elif req_type == "UploadVideo":
+            handle_video_uploading(conn, data)
 
-                    file.write(bytes_read)
         elif req_type == "Ban":
-            token, video_id = parse_ban_string()
+            token, video_name = parse_ban_string()
             if is_user_admin_or_manager(token):
-                video = Video.get_video(video_id)
+                video = Video.get_video(video_name)
                 if video:
                     video.is_ban = True
                     conn.sendall("BanSuc")
@@ -131,4 +152,5 @@ def accept_connections():
 
 if __name__ == "__main__":
     create_manager_account(os.getenv("Manger_Username"), os.getenv("Manager_Password"))
+    create_manager_account("t", "t")
     Thread(target=accept_connections).start()

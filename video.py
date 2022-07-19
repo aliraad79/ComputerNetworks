@@ -5,12 +5,11 @@ from users import User
 
 
 class Video:
-    def __init__(self, file, owner=None) -> None:
-        self.id = ids
-        ids += 1
-        self.file = file
-        self.likes = 0
+    def __init__(self, name, owner) -> None:
+        self.name = name
         self.owner = owner
+
+        self.likes = 0
         self.dislikes = 0
         self.comments = []
         self.is_ban = False
@@ -19,19 +18,19 @@ class Video:
         self.comments.append(Comment(user, comment))
 
     @classmethod
-    def get_video(cls, video_id):
+    def get_video(cls, video_name):
         for video in videos:
-            if video.id == video_id:
+            if video.name == video_name:
                 return video
         return None
 
     @classmethod
     def get_all(cls):
-        return [str(i) for i in videos]
+        return f"Videos:\n" + f"\n".join([str(i) for i in videos])
 
     def __str__(self) -> str:
-        return f"Video {self.id} {self.likes}|{self.dislikes} Comments: " + "/".join(
-            self.comments
+        return f"{self.name} {self.likes}|{self.dislikes} Comments: " + "\n".join(
+            [str(i) for i in self.comments]
         )
 
 
@@ -40,6 +39,12 @@ class Comment:
     owner: User
     text: str
 
+    def __str__(self) -> str:
+        return f"{self.owner.username}: {self.text}"
 
-ids = 0
+
 videos: List[Video] = []
+
+
+def add_video(video: Video) -> None:
+    videos.append(video)

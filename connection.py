@@ -1,4 +1,5 @@
 import socket
+from time import sleep
 from server import HOST, PORT
 
 token = None
@@ -42,13 +43,15 @@ def get_and_send_singup_info(socket):
 
 
 def send_file(file_path: str, socket) -> None:
+    print("Sending ..........")
     with open(file_path, "rb") as file:
         while True:
             part_of_file = file.read(1024)
             if not part_of_file:
                 break
             socket.sendall(part_of_file)
-    socket.sendall(b"FileFinished")
+    sleep(1)
+    socket.sendall(b"VideoFinished")
 
 
 def unstrike_user_routine(socket):
@@ -63,8 +66,8 @@ def unstrike_user_routine(socket):
 
 
 def ban_user_routine(socket):
-    video_id = get_terminal_input("", [], "Video id: ", int)
-    send_message(socket, f"Ban {token} {video_id}")
+    video_name = get_terminal_input("", [], "Video name: ", str)
+    send_message(socket, f"Ban {token} {video_name}")
 
     response = get_network_response(socket)
     if response == "BanSuc":
@@ -74,8 +77,9 @@ def ban_user_routine(socket):
 
 
 def comment_on_video_routine(socket):
+    video_name = get_terminal_input("", [], "Video name: ", str)
     comment = get_terminal_input("", [], "Your Comment: ", str)
-    send_message(socket, f"CommentVideo {token} {comment}")
+    send_message(socket, f"CommentVideo {token} {video_name} {comment}")
 
     response = get_network_response(socket)
     if response == "ReactSuc":
@@ -85,7 +89,7 @@ def comment_on_video_routine(socket):
 
 
 def dislike_video_routine(socket):
-    video_id = get_terminal_input("", [], "Video id: ", int)
+    video_id = get_terminal_input("", [], "Video name: ", str)
     send_message(socket, f"DisLike {token} {video_id}")
 
     response = get_network_response(socket)
@@ -96,7 +100,7 @@ def dislike_video_routine(socket):
 
 
 def like_video_routine(socket):
-    video_id = get_terminal_input("", [], "Video id: ", int)
+    video_id = get_terminal_input("", [], "Video name: ", str)
     send_message(socket, f"Like {token} {video_id}")
 
     response = get_network_response(socket)
@@ -107,10 +111,13 @@ def like_video_routine(socket):
 
 
 def upload_file_routine(socket):
-    send_message(socket, f"UploadFile")
     video_path = get_terminal_input("", [], "Video Path: ", str)
-    send_file(video_path, socket)
-
+    send_message(socket, f"UploadVideo {token} {video_path.split('/')[0]}")
+    response = get_network_response(socket)
+    if response == "Upload":
+        send_file(video_path, socket)
+    elif response == "UploadFail":
+        print("Uploading Video failed")
 
 def logout_routine(socket):
     global token
@@ -164,6 +171,7 @@ def user_thread(socket):
                 "Ban Video",
                 "Unstrike User",
                 "GetAllVideos",
+                "Disconnect",
             ],
         )
 
@@ -189,12 +197,14 @@ def user_thread(socket):
         elif inp == 8:
             send_message(socket, "GetAllVideos")
             print(get_network_response(socket))
+        elif inp == 9:
+            socket.close()
+            exit()
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
         if inp == 1:
             login_routine(socket)
-
         elif inp == 2:
             signup_routine(socket)
 
