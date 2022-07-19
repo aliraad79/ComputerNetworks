@@ -1,14 +1,14 @@
 import socket
 from server import HOST, PORT
 
-is_logged_in = False
 token = None
 
 
 def get_terminal_input(
     msg, options, get_input_message="Enter your choice: ", input_type=int
 ):
-    print(msg)
+    if msg != "":
+        print(msg)
     for counter, i in enumerate(options):
         print(f"\t{1 + counter}. {i}")
     while True:
@@ -113,49 +113,46 @@ def upload_file_routine(socket):
 
 
 def logout_routine(socket):
-    global is_logged_in, token
+    global token
 
     send_message(socket, f"Logout {token}")
     response = get_network_response(socket)
     if response == "LogoutSuc":
         print("Logout Succesfull")
-        is_logged_in = False
         token = None
     elif response == "LogoutFail":
         print("Logout failed")
 
 
 def signup_routine(socket):
-    global is_logged_in, token
+    global token
 
     get_and_send_singup_info(socket)
     response = get_network_response(socket).split()
     if response[0] == "SingupSuc":
         print("Signup Succesfull!")
-        is_logged_in = True
         token = response[1]
     elif response[0] == "SingupFail":
         print("Signup Failed!")
 
 
 def login_routine(socket):
-    global is_logged_in, token
+    global token
 
     get_and_send_login_info(socket)
 
     response = get_network_response(socket).split()
     if response[0] == "LoginSuc":
         print("Login Succesfull!")
-        is_logged_in = True
         token = response[1]
     elif response[0] == "LoginFail":
         print("Login Failed!")
 
 
 def user_thread(socket):
-    global is_logged_in, token
+    global token
 
-    if is_logged_in:
+    if token:
         inp = get_terminal_input(
             "Welcome To Wetube",
             [
