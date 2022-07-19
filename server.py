@@ -74,6 +74,8 @@ def thread_runner(conn: socket.socket):
     while True:
         data = conn.recv(1024).decode("utf-8")
         print(f"Received: {data}")
+        if data == "":
+            break
         req_type = data.split()[0]
 
         if req_type in ["Login", "Signup", "Logout"]:
