@@ -71,7 +71,9 @@ def logout_user(user_id: str):
 
 
 def create_manager_account(username, password):
-    return User.signup_user(username, password, 3)
+    new_user = User.signup_user(username, password, 3)
+    users.append(new_user)
+    return new_user
 
 
 def is_user_loggeed_in(token):
