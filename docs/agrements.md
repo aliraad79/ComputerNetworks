@@ -11,16 +11,18 @@ Signup for every kind of users have two step verification
    1. if not success send back "SignUpFail"
 
 Logout for every kind of users have two step verification
-1. User Send "Logout <username>"
+1. User Send "Logout <token>"
 2. Server send back "LogoutSuc"
 ps:After logging out we stay in menu
 
 
 
-## File
-1. user send UploadFile
-2. user send file
-3. user send FileFinished
+## Video
+1. user send "UploadVideo <token> <file_name>"
+2. server send "Upload" or "UploadFail"
+3. user send video
+4. user send VideoFinished
+5. server saves file under videos directory
 
 ## Reacts
 1. user send react
