@@ -3,6 +3,7 @@ import os
 
 from threading import Thread
 from dotenv import load_dotenv
+from ticket import Text, Ticket
 
 from users import (
     User,
@@ -14,7 +15,11 @@ from users import (
     is_user_admin_or_manager,
 )
 from video import Video, add_video
-from serilizers import parse_two_part_string, parse_one_part_string, parse_three_part_string
+from serilizers import (
+    parse_two_part_string,
+    parse_one_part_string,
+    parse_three_part_string,
+)
 
 load_dotenv()
 
@@ -41,13 +46,46 @@ def handle_user_reacts(conn, data, req_type):
 
 def handle_tickets(conn, data, req_type):
     if req_type == "NewTicket":
-        ...
+        token = data.split()[1]
+        user = User.get_user(token)
+        if user:
+            text = data.split()[2:]
+            ticket = Ticket(user)
+            ticket.add_chat(Text(user, text))
 
-    # elif req_type == "AnswerTicket":
+            conn.sendall(b"NewTicketSuc")
+        else:
+            conn.sendall(b"NewTicketFail")
 
-    # elif req_type == "ChangeTicketState":
+    elif req_type == "AnswerTicket":
+        token, ticket_id = data.split()[1:3]
+        user = User.get_user(token)
+        ticket = Ticket.get_ticket(ticket_id)
+        if user and ticket:
+            text = data.split()[3:]
+            ticket.add_chat(Text(user, text))
+            conn.sendall(b"AnswerTicketSuc")
+        else:
+            conn.sendall(b"AnswerTicketFail")
 
-    # elif req_type == "GetTickets":
+    elif req_type == "ChangeTicketState":
+        token, ticket_id, state = parse_three_part_string(data)
+        user = User.get_user(token)
+        ticket = Ticket.get_ticket(ticket_id)
+        if user and ticket:
+            ticket.change_state(state)
+            conn.sendall(b"ChangeTicketStateSuc")
+        else:
+            conn.sendall(b"ChangeTicketStateFail")
+
+    elif req_type == "GetTickets":
+        token = parse_one_part_string(data)
+        user = User.get_user(token)
+        if user:
+            tickets = Ticket.get_user_tickets(user.id)
+            conn.sendall(bytes(f"GetTicketsSuc {tickets}", "utf-8"))
+        else:
+            conn.sendall(b"GetTicketsFail")
 
 
 def handle_user_auth(conn, data, req_type):
