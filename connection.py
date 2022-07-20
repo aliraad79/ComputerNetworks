@@ -35,7 +35,7 @@ def get_and_send_login_info(socket):
 
 def get_and_send_singup_info(socket):
     usertype = get_terminal_input(
-        "User Type", ["User", "Admin", "Manager"], input_type=int
+        "User Type", ["User", "Admin"], input_type=int
     )
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
@@ -119,6 +119,15 @@ def upload_file_routine(socket):
     elif response == "UploadFail":
         print("Uploading Video failed")
 
+def approve_admin_routine(socket):
+    username = get_terminal_input("", [], "Username: ", str)
+    send_message(socket, f"App {token} {username}")
+    response = get_network_response(socket)
+    if response == "AppSuc":
+        print(f"Approved {username}")
+    elif response == "AppFail":
+        print(f"Can't Approve {username}")
+
 def logout_routine(socket):
     global token
 
@@ -172,6 +181,7 @@ def user_thread(socket):
                 "Unstrike User",
                 "GetAllVideos",
                 "Disconnect",
+                "Approve Admin account"
             ],
         )
 
@@ -200,6 +210,8 @@ def user_thread(socket):
         elif inp == 9:
             socket.close()
             exit()
+        elif inp == 10:
+            approve_admin_routine(socket)
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])

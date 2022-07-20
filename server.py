@@ -15,6 +15,7 @@ from users import (
 )
 from video import Video, add_video
 from serilizers import (
+    parse_approve_string,
     parse_ban_string,
     parse_react_string,
     parse_login_string,
@@ -139,6 +140,17 @@ def thread_runner(conn: socket.socket):
                     conn.sendall("UnstrikeFail")
             else:
                 conn.sendall("UnstrikeFail")
+        elif req_type == "App":
+            token, target_username = parse_approve_string()
+            if is_user_admin_or_manager(token):
+                user = User.get_user_by_username(target_username)
+                if user:
+                    user.is_approved = True
+                    conn.sendall("AppSuc")
+                else:
+                    conn.sendall("AppFail")
+            else:
+                conn.sendall("AppFail")
 
 
 def accept_connections():

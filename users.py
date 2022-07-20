@@ -14,6 +14,7 @@ class User:
     type: bool = field(default=0)
     is_Logged_in: bool = field(default=False)
     is_striked: bool = field(default=False)
+    is_approved: bool = field(default=False)
     id: str = field(default=False)
 
     @classmethod
@@ -26,7 +27,13 @@ class User:
 
     @classmethod
     def signup_user(cls, username, password, user_type):
-        return cls(username, password, user_type, id=_hash(username, password))
+        return cls(
+            username,
+            password,
+            user_type,
+            id=_hash(username, password),
+            is_approved=user_type == 1,
+        )
 
     @classmethod
     def get_user(cls, token):

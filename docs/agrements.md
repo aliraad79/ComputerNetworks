@@ -31,3 +31,7 @@ ps:After logging out we stay in menu
 ## Ban
 1. user send ban req
 2. server send "BanSuc" or "BanFail"
+
+## Aprove admin account
+1. manager send "App <token> <username>"
+2. server send "AppSuc" or "AppFail"
