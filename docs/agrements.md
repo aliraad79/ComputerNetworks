@@ -35,3 +35,21 @@ ps:After logging out we stay in menu
 ## Aprove admin account
 1. manager send "App <token> <username>"
 2. server send "AppSuc" or "AppFail"
+
+
+## Tickets
+### New Ticket
+1. user send "NewTicket <token> <text>"
+2. server send "NewTicketSuc" or "NewTicketFail"
+
+### Answer Ticket
+1. admin send "AnswerTicket <token> <ticket_id> <comment>"
+2. server send "AnswerTicketSuc" or "AnswerTicketFail"
+
+## change ticket state
+1. admin send "ChangeTicketState <token> <ticket_id> <new_state>"
+2. server send "ChangeTicketStateSuc" or "ChangeTicketStateFail"
+
+## See tickets
+1. user send "GetTickets <token>"
+2. server send "GetTicketsSuc <list_of_tickets>" or "GetTicketsFail"
