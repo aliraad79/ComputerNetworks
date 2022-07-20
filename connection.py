@@ -34,9 +34,7 @@ def get_and_send_login_info(socket):
 
 
 def get_and_send_singup_info(socket):
-    usertype = get_terminal_input(
-        "User Type", ["User", "Admin"], input_type=int
-    )
+    usertype = get_terminal_input("User Type", ["User", "Admin"], input_type=int)
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Signup {username} {password} {usertype}")
@@ -119,6 +117,7 @@ def upload_file_routine(socket):
     elif response == "UploadFail":
         print("Uploading Video failed")
 
+
 def approve_admin_routine(socket):
     username = get_terminal_input("", [], "Username: ", str)
     send_message(socket, f"App {token} {username}")
@@ -127,6 +126,48 @@ def approve_admin_routine(socket):
         print(f"Approved {username}")
     elif response == "AppFail":
         print(f"Can't Approve {username}")
+
+
+def new_ticket_routine(socket):
+    text = get_terminal_input("", [], "Your Complain: ", str)
+    send_message(socket, f"NewTicket {token} {text}")
+    response = get_network_response(socket)
+    if response == "NewTicketSuc":
+        print(f"Ticket Created")
+    elif response == "NewTicketFail":
+        print(f"Creating ticket has counter error")
+
+
+def answer_ticket_routine(socket):
+    ticket_id = get_terminal_input("", [], "ticket_id: ", int)
+    text = get_terminal_input("", [], "Your Comment on ticket: ", str)
+    send_message(socket, f"AnswerTicket {token} {ticket_id} {text}")
+    response = get_network_response(socket)
+    if response == "AnswerTicketSuc":
+        print(f"New Comment Added")
+    elif response == "AnswerTicketFail":
+        print(f"Answering ticket has counter error")
+
+
+def change_ticket_state_routine(socket):
+    ticket_id = get_terminal_input("", [], "ticket_id: ", int)
+    state = get_terminal_input("Choose State", ["New", "Pending", "Solved", "Closed"])
+    send_message(socket, f"AnswerTicket {token} {ticket_id} {state}")
+    response = get_network_response(socket)
+    if response == "ChangeTicketStateSuc":
+        print(f"Ticket State Changed")
+    elif response == "ChangeTicketStateFail":
+        print(f"changing ticket state has counter error")
+
+
+def see_all_tickets_routine(socket):
+    send_message(socket, f"GetTickets {token} ")
+    response = get_network_response(socket).split()
+    if response[0] == "GetTicketsSuc":
+        print(response)
+    elif response[0] == "GetTicketsFail":
+        print(f"getting all tickets has counter error")
+
 
 def logout_routine(socket):
     global token
@@ -181,7 +222,11 @@ def user_thread(socket):
                 "Unstrike User",
                 "GetAllVideos",
                 "Disconnect",
-                "Approve Admin account"
+                "Approve Admin account",
+                "New Ticket",
+                "Answer Ticket",
+                "Change Ticket State",
+                "See all my Tickets",
             ],
         )
 
@@ -212,6 +257,14 @@ def user_thread(socket):
             exit()
         elif inp == 10:
             approve_admin_routine(socket)
+        elif inp == 11:
+            new_ticket_routine(socket)
+        elif inp == 12:
+            answer_ticket_routine(socket)
+        elif inp == 13:
+            change_ticket_state_routine(socket)
+        elif inp == 14:
+            see_all_tickets_routine(socket)
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
