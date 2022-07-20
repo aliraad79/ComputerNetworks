@@ -14,17 +14,7 @@ from users import (
     is_user_admin_or_manager,
 )
 from video import Video, add_video
-from serilizers import (
-    parse_approve_string,
-    parse_ban_string,
-    parse_react_string,
-    parse_login_string,
-    parse_logout_string,
-    parse_signup_string,
-    parse_unstrike_string,
-    parse_video_string,
-)
-
+from serilizers import parse_two_part_string, parse_one_part_string, parse_three_part_string
 
 load_dotenv()
 
@@ -33,7 +23,7 @@ PORT = int(os.getenv("PORT"))
 
 
 def handle_user_reacts(conn, data, req_type):
-    token, video_name = parse_react_string(data)
+    token, video_name = parse_two_part_string(data)
     if is_user_loggeed_in(token):
         video = Video.get_video(video_name)
 
@@ -42,16 +32,27 @@ def handle_user_reacts(conn, data, req_type):
         elif req_type == "DisLike":
             video.dislikes += 1
         elif req_type == "CommentVideo":
-            video.add_comment(User.get_user(token), ''.join(data.split()[3:]))
+            video.add_comment(User.get_user(token), "".join(data.split()[3:]))
 
         conn.sendall(b"ReactSuc")
     else:
         conn.sendall(b"ReactFail")
 
 
+def handle_tickets(conn, data, req_type):
+    if req_type == "NewTicket":
+        ...
+
+    # elif req_type == "AnswerTicket":
+
+    # elif req_type == "ChangeTicketState":
+
+    # elif req_type == "GetTickets":
+
+
 def handle_user_auth(conn, data, req_type):
     if req_type == "Login":
-        username, password = parse_login_string(data)
+        username, password = parse_two_part_string(data)
         user = login_user(username, password)
         if user:
             conn.sendall(b"LoginSuc " + bytes(user.id, "utf-8"))
@@ -59,7 +60,7 @@ def handle_user_auth(conn, data, req_type):
             conn.sendall(b"LoginFail")
 
     elif req_type == "Signup":
-        username, password, user_type = parse_signup_string(data)
+        username, password, user_type = parse_three_part_string(data)
         user = signup_user(username, password, user_type)
         if user:
             conn.sendall(b"SingupSuc " + bytes(user.id, "utf-8"))
@@ -67,7 +68,7 @@ def handle_user_auth(conn, data, req_type):
             conn.sendall(b"SingupFail")
 
     elif req_type == "Logout":
-        token = parse_logout_string(data)
+        token = parse_one_part_string(data)
         if logout_user(token):
             conn.sendall(b"LogoutSuc")
         else:
@@ -75,7 +76,7 @@ def handle_user_auth(conn, data, req_type):
 
 
 def handle_video_uploading(conn, data):
-    token, video_name = parse_video_string(data)
+    token, video_name = parse_two_part_string(data)
     user = User.get_user(token)
     if user:
         conn.sendall(b"Upload")
@@ -118,7 +119,7 @@ def thread_runner(conn: socket.socket):
             handle_video_uploading(conn, data)
 
         elif req_type == "Ban":
-            token, video_name = parse_ban_string()
+            token, video_name = parse_two_part_string()
             if is_user_admin_or_manager(token):
                 video = Video.get_video(video_name)
                 if video:
@@ -130,7 +131,7 @@ def thread_runner(conn: socket.socket):
                 conn.sendall("BanFail")
 
         elif req_type == "Unstrike":
-            token, target_username = parse_unstrike_string()
+            token, target_username = parse_two_part_string()
             if is_user_admin_or_manager(token):
                 user = User.get_user_by_username(target_username)
                 if user:
@@ -141,7 +142,7 @@ def thread_runner(conn: socket.socket):
             else:
                 conn.sendall("UnstrikeFail")
         elif req_type == "App":
-            token, target_username = parse_approve_string()
+            token, target_username = parse_two_part_string()
             if is_user_admin_or_manager(token):
                 user = User.get_user_by_username(target_username)
                 if user:
@@ -151,6 +152,9 @@ def thread_runner(conn: socket.socket):
                     conn.sendall("AppFail")
             else:
                 conn.sendall("AppFail")
+
+        elif req_type in ["NewTicket"]:
+            handle_tickets(conn, data, req_type)
 
 
 def accept_connections():

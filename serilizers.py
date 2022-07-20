@@ -1,61 +1,25 @@
 from typing import Tuple
 
 
-def parse_react_string(input_string: str) -> Tuple[str, str]:
+def parse_one_part_string(input_string: str) -> Tuple[str]:
     """
-    <req> <token> <video_name>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
-
-
-def parse_login_string(input_string: str) -> Tuple[str, str]:
-    """
-    <req> <token> <password>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
-
-def parse_logout_string(input_string: str) -> Tuple[str]:
-    """
-    <req> <token>
+    <req> <part_1>
     """
     splited_string = input_string.split()
     return splited_string[1]
 
 
-def parse_signup_string(input_string: str) -> Tuple[str, str, str]:
+def parse_two_part_string(input_string: str) -> Tuple[str, str]:
     """
-    <req> <token> <password> <usertype>
+    <req> <part_1> <part_2>
+    """
+    splited_string = input_string.split()
+    return splited_string[1], splited_string[2]
+
+
+def parse_three_part_string(input_string: str) -> Tuple[str, str, str]:
+    """
+    <req> <part_1> <part_2> <part_3>
     """
     splited_string = input_string.split()
     return splited_string[1], splited_string[2], splited_string[3]
-
-def parse_ban_string(input_string: str) -> Tuple[str, str]:
-    """
-    <req> <token> <video_name>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
-
-def parse_unstrike_string(input_string: str) -> Tuple[str, str]:
-    """
-    <req> <token> <username>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
-
-def parse_video_string(input_string: str) -> Tuple[str, str]:
-    """
-    <req> <token> <video_name>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
-
-
-def parse_approve_string(input_string: str) -> Tuple[str, str]:
-    """
-    <req> <token> <username>
-    """
-    splited_string = input_string.split()
-    return splited_string[1], splited_string[2]
