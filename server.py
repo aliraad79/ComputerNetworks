@@ -3,7 +3,7 @@ import os
 
 from threading import Thread
 from dotenv import load_dotenv
-from ticket import Text, Ticket
+from ticket import Text, Ticket, create_ticket
 
 from users import (
     User,
@@ -50,8 +50,8 @@ def handle_tickets(conn, data, req_type):
         user = User.get_user(token)
         if user:
             text = data.split()[2:]
-            ticket = Ticket(user)
-            ticket.add_chat(Text(user, text))
+            ticket = create_ticket(user)
+            ticket.add_chat(Text(user, " ".join(text)))
 
             conn.sendall(b"NewTicketSuc")
         else:
@@ -63,7 +63,7 @@ def handle_tickets(conn, data, req_type):
         ticket = Ticket.get_ticket(ticket_id)
         if user and ticket:
             text = data.split()[3:]
-            ticket.add_chat(Text(user, text))
+            ticket.add_chat(Text(user, " ".join(text)))
             conn.sendall(b"AnswerTicketSuc")
         else:
             conn.sendall(b"AnswerTicketFail")
@@ -81,9 +81,11 @@ def handle_tickets(conn, data, req_type):
     elif req_type == "GetTickets":
         token = parse_one_part_string(data)
         user = User.get_user(token)
+
         if user:
             tickets = Ticket.get_user_tickets(user.id)
-            conn.sendall(bytes(f"GetTicketsSuc {tickets}", "utf-8"))
+            print([i for i in tickets])
+            conn.sendall(bytes(f"GetTicketsSuc {[i for i in tickets]}", "utf-8"))
         else:
             conn.sendall(b"GetTicketsFail")
 
@@ -191,7 +193,12 @@ def thread_runner(conn: socket.socket):
             else:
                 conn.sendall("AppFail")
 
-        elif req_type in ["NewTicket"]:
+        elif req_type in [
+            "NewTicket",
+            "AnswerTicket",
+            "ChangeTicketState",
+            "GetTickets",
+        ]:
             handle_tickets(conn, data, req_type)
 
 
