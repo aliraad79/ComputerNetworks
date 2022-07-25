@@ -198,7 +198,7 @@ def signup_routine(socket):
     if response[0] == "SingupSuc":
         print("Signup Succesfull!")
         token = response[1]
-        rule = Rules(response[2])
+        rule = Rules(int(response[2]))
     elif response[0] == "SingupFail":
         print("Signup Failed!")
 
@@ -212,71 +212,125 @@ def login_routine(socket):
     if response[0] == "LoginSuc":
         print("Login Succesfull!")
         token = response[1]
-        rule = Rules(response[2])
+        rule = Rules(int(response[2]))
 
     elif response[0] == "LoginFail":
         print("Login Failed!")
 
 
+def manager_menu(socket):
+    inp = get_terminal_input(
+        "Welcome To Wetube",
+        [
+            "Approve Admin account",
+            "Answer Ticket",
+            "See all my Tickets",
+            "Change Ticket State",
+            "Logout",
+            "Disconnect",
+        ],
+    )
+    if inp == 1:
+        approve_admin_routine(socket)
+    elif inp == 2:
+        answer_ticket_routine(socket)
+    elif inp == 3:
+        see_all_tickets_routine(socket)
+    elif inp == 4:
+        change_ticket_state_routine(socket)
+    elif inp == 5:
+        logout_routine(socket)
+    elif inp == 6:
+        socket.close()
+        exit()
+
+
+def admin_menu(socket):
+    inp = get_terminal_input(
+        "Welcome To Wetube",
+        [
+            "Ban Video",
+            "Unstrike User",
+            "New Ticket",
+            "Answer Ticket",
+            "See all my Tickets",
+            "Change Ticket State",
+            "Logout",
+            "Disconnect",
+            # add label
+            # view video
+        ],
+    )
+    if inp == 1:
+        ban_user_routine(socket)
+    elif inp == 2:
+        unstrike_user_routine(socket)
+    elif inp == 3:
+        new_ticket_routine(socket)
+    elif inp == 4:
+        answer_ticket_routine(socket)
+    elif inp == 5:
+        see_all_tickets_routine(socket)
+    elif inp == 6:
+        change_ticket_state_routine(socket)
+    elif inp == 7:
+        logout_routine(socket)
+    elif inp == 8:
+        socket.close()
+        exit()
+
+
+def user_menu(socket):
+    inp = get_terminal_input(
+        "Welcome To Wetube",
+        [
+            "Upload Video",
+            # view video
+            "Like video",
+            "DisLike video",
+            "Comment On video",
+            "New Ticket",
+            "Answer Ticket",
+            "See all my Tickets",
+            "GetAllVideos",
+            "Logout",
+            "Disconnect",
+        ],
+    )
+    if inp == 1:
+        upload_file_routine(socket)
+    elif inp == 2:
+        like_video_routine(socket)
+    elif inp == 3:
+        dislike_video_routine(socket)
+    elif inp == 4:
+        comment_on_video_routine(socket)
+    elif inp == 5:
+        new_ticket_routine(socket)
+    elif inp == 6:
+        answer_ticket_routine(socket)
+    elif inp == 7:
+        see_all_tickets_routine(socket)
+    elif inp == 8:
+        send_message(socket, "GetAllVideos")
+        print(get_network_response(socket))
+    elif inp == 9:
+        logout_routine(socket)
+    elif inp == 10:
+        socket.close()
+        exit()
+
+
 def user_thread(socket):
-    global token
+    global token, rule
 
     if token:
-        inp = get_terminal_input(
-            "Welcome To Wetube",
-            [
-                "Logout",
-                "Upload Video",
-                "Like video",
-                "DisLike video",
-                "Comment On video",
-                "Ban Video",
-                "Unstrike User",
-                "GetAllVideos",
-                "Disconnect",
-                "Approve Admin account",
-                "New Ticket",
-                "Answer Ticket",
-                "Change Ticket State",
-                "See all my Tickets",
-            ],
-        )
-
-        if inp == 1:
-            logout_routine(socket)
-
-        elif inp == 2:
-            upload_file_routine(socket)
-
-        # Reacts
-        elif inp == 3:
-            like_video_routine(socket)
-        elif inp == 4:
-            dislike_video_routine(socket)
-        elif inp == 5:
-            comment_on_video_routine(socket)
-        # ---------------------------
-
-        elif inp == 6:
-            ban_user_routine(socket)
-        elif inp == 7:
-            unstrike_user_routine(socket)
-        elif inp == 8:
-            send_message(socket, "GetAllVideos")
-            print(get_network_response(socket))
-        elif inp == 9:
-            socket.close()
-            exit()
-        elif inp == 10:
-            approve_admin_routine(socket)
-        elif inp == 11:
-            new_ticket_routine(socket)
-        elif inp == 12:
-            answer_ticket_routine(socket)
-        elif inp == 13:
-            change_ticket_state_routine(socket)
-        elif inp == 14:
-            see_all_tickets_routine(socket)
+        if rule == Rules.USER:
+            user_menu(socket)
+        elif rule == Rules.ADMIN:
+            admin_menu(socket)
+        elif rule == Rules.MANAGER:
+            manager_menu(socket)
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
