@@ -11,7 +11,7 @@ def _hash(username: str, password: str):
 class User:
     username: str
     password: str
-    type: bool = field(default=0)
+    type: int = field(default=0)
     is_Logged_in: bool = field(default=False)
     is_striked: bool = field(default=False)
     is_approved: bool = field(default=False)
