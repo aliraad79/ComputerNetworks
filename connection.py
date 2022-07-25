@@ -1,8 +1,17 @@
 import socket
+from enum import Enum
 from time import sleep
+
 from server import HOST, PORT
 
 token = None
+rule = None
+
+
+class Rules(Enum):
+    USER = 1
+    ADMIN = 2
+    MANAGER = 3
 
 
 def get_terminal_input(
@@ -27,14 +36,14 @@ def send_message(socket, msg):
     socket.sendall(bytes(msg, "utf-8"))
 
 
-def get_and_send_login_info(socket):
+def send_login_info(socket):
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Login {username} {password}")
 
 
 def get_and_send_singup_info(socket):
-    usertype = get_terminal_input("User Type", ["User", "Admin"], input_type=int)
+    usertype = get_terminal_input("User Type", ["User", "Admin"])
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Signup {username} {password} {usertype}")
@@ -170,38 +179,41 @@ def see_all_tickets_routine(socket):
 
 
 def logout_routine(socket):
-    global token
+    global token, rule
 
     send_message(socket, f"Logout {token}")
     response = get_network_response(socket)
     if response == "LogoutSuc":
         print("Logout Succesfull")
-        token = None
+        rule = token = None
     elif response == "LogoutFail":
         print("Logout failed")
 
 
 def signup_routine(socket):
-    global token
+    global token, rule
 
     get_and_send_singup_info(socket)
     response = get_network_response(socket).split()
     if response[0] == "SingupSuc":
         print("Signup Succesfull!")
         token = response[1]
+        rule = Rules(response[2])
     elif response[0] == "SingupFail":
         print("Signup Failed!")
 
 
 def login_routine(socket):
-    global token
+    global token, rule
 
-    get_and_send_login_info(socket)
+    send_login_info(socket)
 
     response = get_network_response(socket).split()
     if response[0] == "LoginSuc":
         print("Login Succesfull!")
         token = response[1]
+        rule = Rules(response[2])
+
     elif response[0] == "LoginFail":
         print("Login Failed!")
 
