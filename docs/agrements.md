@@ -55,3 +55,14 @@ ps:After logging out we stay in menu
 ## See tickets
 1. user send "GetTickets <token>"
 2. server send "GetTicketsSuc <list_of_tickets>" or "GetTicketsFail"
+
+
+## Labels
+1. we have 5 labels
+   1. under 13
+   2. under 18
+   3. R rated
+   4. violence
+   5. May find argumentive
+2. admin send "AddLabel <token> <video_name> <label_id>"
+3. server send "AddLabelSuc" or "AddLabelFail"

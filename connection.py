@@ -15,6 +15,14 @@ class Rules(Enum):
     MANAGER = 3
 
 
+class ChossableLabel(Enum):
+    Under_13 = 1
+    Under_18 = 2
+    R_rated = 3
+    Violance = 4
+    May_find_argumantive = 5
+
+
 def get_terminal_input(
     msg, options, get_input_message="Enter your choice: ", input_type=int
 ):
@@ -82,6 +90,22 @@ def ban_user_routine(socket):
         print("Banning video Sucessfull")
     elif response == "BanFail":
         print("Banning video Failed")
+
+
+def add_label_routine(socket):
+    video_name = get_terminal_input("", [], "Video name: ", str)
+    label = get_terminal_input(
+        "Chose label to add"[
+            "Under 13", "Under 18", "R rated", "Violance", "May find argumantive"
+        ],
+    )
+    send_message(socket, f"AddLabel {token} {video_name} {label}")
+
+    response = get_network_response(socket)
+    if response == "AddLabelSuc":
+        print("Label Added to video Sucessfully")
+    elif response == "AddLabelFail":
+        print("Adding label counter")
 
 
 def comment_on_video_routine(socket):
@@ -258,13 +282,13 @@ def admin_menu(socket):
         [
             "Ban Video",
             "Unstrike User",
+            "Add label to video",
             "New Ticket",
             "Answer Ticket",
             "See all my Tickets",
             "Change Ticket State",
             "Logout",
             "Disconnect",
-            # add label
             # view video
         ],
     )
@@ -273,16 +297,18 @@ def admin_menu(socket):
     elif inp == 2:
         unstrike_user_routine(socket)
     elif inp == 3:
-        new_ticket_routine(socket)
+        add_label_routine(socket)
     elif inp == 4:
-        answer_ticket_routine(socket)
+        new_ticket_routine(socket)
     elif inp == 5:
-        see_all_tickets_routine(socket)
+        answer_ticket_routine(socket)
     elif inp == 6:
-        change_ticket_state_routine(socket)
+        see_all_tickets_routine(socket)
     elif inp == 7:
-        logout_routine(socket)
+        change_ticket_state_routine(socket)
     elif inp == 8:
+        logout_routine(socket)
+    elif inp == 9:
         socket.close()
         exit()
 

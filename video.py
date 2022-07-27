@@ -1,7 +1,16 @@
 from dataclasses import dataclass
 from typing import List
+from enum import Enum
 
 from users import User
+
+
+class Label(Enum):
+    Under_13 = 1
+    Under_18 = 2
+    R_rated = 3
+    Violance = 4
+    May_find_argumantive = 5
 
 
 class Video:
@@ -14,8 +23,13 @@ class Video:
         self.comments = []
         self.is_ban = False
 
+        self.labels: List[Label] = []
+
     def add_comment(self, user, comment):
         self.comments.append(Comment(user, comment))
+
+    def add_label(self, label_id: int):
+        self.labels.append(Label(label_id))
 
     @classmethod
     def get_video(cls, video_name):

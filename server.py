@@ -141,6 +141,15 @@ def handle_video_uploading(conn, data):
     else:
         conn.sendall(b"UploadFail")
 
+def handle_adding_label_to_video(conn, data):
+    token, video_name, label_id = parse_three_part_string(data)
+    user = User.get_user(token)
+    video = Video.get_video(video_name)
+    if user and video:
+        video.add_label(int(label_id))
+        conn.sendall(b"AddLabelSuc")
+    else:
+        conn.sendall(b"AddLabelFail")
 
 def handle_approving_user(conn, data):
     token, target_username = parse_two_part_string(data)
@@ -200,6 +209,8 @@ def thread_runner(conn: socket.socket):
 
         elif req_type == "UploadVideo":
             handle_video_uploading(conn, data)
+        elif req_type == "AddLabel":
+            handle_adding_label_to_video(conn, data)
 
         elif req_type == "Ban":
             handle_banning_user(conn, data)
