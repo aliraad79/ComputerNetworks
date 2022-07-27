@@ -1,4 +1,5 @@
 import socket
+import pickle
 from enum import Enum
 from time import sleep
 
@@ -161,7 +162,7 @@ def answer_ticket_routine(socket):
 def change_ticket_state_routine(socket):
     ticket_id = get_terminal_input("", [], "ticket_id: ", int)
     state = get_terminal_input("Choose State", ["New", "Pending", "Solved", "Closed"])
-    send_message(socket, f"AnswerTicket {token} {ticket_id} {state}")
+    send_message(socket, f"ChangeTicketState {token} {ticket_id} {state}")
     response = get_network_response(socket)
     if response == "ChangeTicketStateSuc":
         print(f"Ticket State Changed")
@@ -171,10 +172,15 @@ def change_ticket_state_routine(socket):
 
 def see_all_tickets_routine(socket):
     send_message(socket, f"GetTickets {token} ")
-    response = get_network_response(socket).split()
-    if response[0] == "GetTicketsSuc":
-        print(response)
-    elif response[0] == "GetTicketsFail":
+    data = s.recv(1024)
+
+    if data.startswith(b"GetTicketsSuc"):
+        pickle_data = data[len("GetTicketsSuc ") :]
+
+        target_data = pickle.loads(pickle_data)
+        for i in target_data:
+            print(i)
+    elif data.startswith(b"GetTicketsFail"):
         print(f"getting all tickets has counter error")
 
 

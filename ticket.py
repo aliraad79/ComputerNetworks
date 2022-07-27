@@ -23,32 +23,34 @@ class Ticket:
         self.chats: List[Text] = []
 
     def add_chat(self, text: Comment):
-        print(text)
         self.chats.append(text)
 
-    def change_state(self, state: TicketState):
-        self.state = state
+    def change_state(self, state: int):
+        self.state = TicketState(state)
 
     @classmethod
     def get_ticket(cls, ticket_id):
-        for i in tickets:
-            if i.id == ticket_id:
-                return i
+        for ticket in tickets:
+            if ticket.id == ticket_id:
+                return ticket
         return None
 
     @classmethod
-    def get_user_tickets(cls, user_id):
-        return [str(i) for i in tickets if i.opener.id == user_id]
+    def get_user_tickets(cls, user: User):
+        return [
+            str(i) for i in tickets if i.opener.id == user.id or user.type in [2, 3]
+        ]
 
     def __str__(self) -> str:
-        print(self.chats)
-        return f"{self.opener.username}\t|{self.id}|\t{self.state.name}:\n" + "".join(
-            [str(i) for i in self.chats]
+        return (
+            f"username: {self.opener.username} | ticket id:{self.id} | State: {self.state.name}\n\t"
+            + "\n\t".join([str(i) for i in self.chats])
         )
 
 
 class Text(Comment):
-    ...
+    def __str__(self) -> str:
+        return super().__str__()
 
 
 tickets: List[Ticket] = []

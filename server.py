@@ -1,5 +1,6 @@
 import socket
 import os
+import pickle
 
 from threading import Thread
 from dotenv import load_dotenv
@@ -60,7 +61,7 @@ def handle_tickets(conn, data, req_type):
     elif req_type == "AnswerTicket":
         token, ticket_id = data.split()[1:3]
         user = User.get_user(token)
-        ticket = Ticket.get_ticket(ticket_id)
+        ticket = Ticket.get_ticket(int(ticket_id))
         if user and ticket:
             text = data.split()[3:]
             ticket.add_chat(Text(user, " ".join(text)))
@@ -71,9 +72,9 @@ def handle_tickets(conn, data, req_type):
     elif req_type == "ChangeTicketState":
         token, ticket_id, state = parse_three_part_string(data)
         user = User.get_user(token)
-        ticket = Ticket.get_ticket(ticket_id)
+        ticket = Ticket.get_ticket(int(ticket_id))
         if user and ticket:
-            ticket.change_state(state)
+            ticket.change_state(int(state))
             conn.sendall(b"ChangeTicketStateSuc")
         else:
             conn.sendall(b"ChangeTicketStateFail")
@@ -83,9 +84,9 @@ def handle_tickets(conn, data, req_type):
         user = User.get_user(token)
 
         if user:
-            tickets = Ticket.get_user_tickets(user.id)
-            print([i for i in tickets])
-            conn.sendall(bytes(f"GetTicketsSuc {[i for i in tickets]}", "utf-8"))
+            tickets = Ticket.get_user_tickets(user)
+            dump = pickle.dumps(tickets)
+            conn.sendall(bytes(f"GetTicketsSuc ", "utf-8") + dump)
         else:
             conn.sendall(b"GetTicketsFail")
 

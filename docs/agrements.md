@@ -6,7 +6,8 @@ Login for every kind of users have two step verification
 
 Signup for every kind of users have two step verification
 1. User Send "Singup <username> <password> <type>"
-   1. type : normal user=1 admin=2 manager=3
+   1. type : normal user=1 admin=2
+      1. manager is not registable and we have only one default manager
 2. Server send back "SingupSuc <token> <rule>"
    1. if not success send back "SignUpFail"
 

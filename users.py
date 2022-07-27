@@ -49,9 +49,6 @@ class User:
                 return i
         return None
 
-    def __eq__(self, __o: object) -> bool:
-        return self.id == __o.id
-
 
 def login_user(username: str, password: str) -> User:
     return User.login_user(username, password)
