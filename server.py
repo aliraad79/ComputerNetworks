@@ -143,9 +143,8 @@ def handle_video_uploading(conn, data):
 
 def handle_adding_label_to_video(conn, data):
     token, video_name, label_id = parse_three_part_string(data)
-    user = User.get_user(token)
     video = Video.get_video(video_name)
-    if user and video:
+    if is_user_admin_or_manager(token) and video:
         video.add_label(int(label_id))
         conn.sendall(b"AddLabelSuc")
     else:
@@ -177,12 +176,12 @@ def handle_unstricking_user(conn, data):
         conn.sendall(b"UnstrikeFail")
 
 
-def handle_banning_user(conn, data):
+def handle_banning_video(conn, data):
     token, video_name = parse_two_part_string(data)
     if is_user_admin_or_manager(token):
         video = Video.get_video(video_name)
         if video:
-            video.is_ban = True
+            video.ban()
             conn.sendall(b"BanSuc")
         else:
             conn.sendall(b"BanFail")
@@ -213,7 +212,7 @@ def thread_runner(conn: socket.socket):
             handle_adding_label_to_video(conn, data)
 
         elif req_type == "Ban":
-            handle_banning_user(conn, data)
+            handle_banning_video(conn, data)
         elif req_type == "Unstrike":
             handle_unstricking_user(conn, data)
         elif req_type == "App":

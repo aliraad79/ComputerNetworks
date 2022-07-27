@@ -31,6 +31,11 @@ class Video:
     def add_label(self, label_id: int):
         self.labels.append(Label(label_id))
 
+    def ban(self):
+        self.is_ban = True
+        # TODO:
+        # handle user striking here
+
     @classmethod
     def get_video(cls, video_name):
         for video in videos:
