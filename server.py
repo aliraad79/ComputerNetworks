@@ -96,15 +96,18 @@ def handle_user_auth(conn, data, req_type):
         username, password = parse_two_part_string(data)
         user = login_user(username, password)
         if user:
-            conn.sendall(bytes(f"LoginSuc {user.id} {user.access_level}", "utf-8"))
+            if user.is_approved:
+                conn.sendall(bytes(f"LoginSuc {user.id} {user.access_level}", "utf-8"))
+            else:
+                conn.sendall(b"LoginFail UserNotApprove")
         else:
-            conn.sendall(b"LoginFail")
+            conn.sendall(b"LoginFail UserNotFound")
 
     elif req_type == "Signup":
         username, password, user_type = parse_three_part_string(data)
         user = signup_user(username, password, int(user_type))
         if user:
-            conn.sendall(bytes(f"SingupSuc {user.id} {user.access_level}", "utf-8"))
+            conn.sendall(bytes(f"SingupSuc", "utf-8"))
         else:
             conn.sendall(b"SingupFail")
 
@@ -139,6 +142,45 @@ def handle_video_uploading(conn, data):
         conn.sendall(b"UploadFail")
 
 
+def handle_approving_user(conn, data):
+    token, target_username = parse_two_part_string(data)
+    if is_user_admin_or_manager(token):
+        user = User.get_user_by_username(target_username)
+        if user:
+            user.is_approved = True
+            conn.sendall(b"AppSuc")
+        else:
+            conn.sendall(b"AppFail")
+    else:
+        conn.sendall(b"AppFail")
+
+
+def handle_unstricking_user(conn, data):
+    token, target_username = parse_two_part_string(data)
+    if is_user_admin_or_manager(token):
+        user = User.get_user_by_username(target_username)
+        if user:
+            user.is_striked = True
+            conn.sendall(b"UnstrikeSuc")
+        else:
+            conn.sendall(b"UnstrikeFail")
+    else:
+        conn.sendall(b"UnstrikeFail")
+
+
+def handle_banning_user(conn, data):
+    token, video_name = parse_two_part_string(data)
+    if is_user_admin_or_manager(token):
+        video = Video.get_video(video_name)
+        if video:
+            video.is_ban = True
+            conn.sendall(b"BanSuc")
+        else:
+            conn.sendall(b"BanFail")
+    else:
+        conn.sendall(b"BanFail")
+
+
 def thread_runner(conn: socket.socket):
     while True:
         data = conn.recv(1024).decode("utf-8")
@@ -160,39 +202,11 @@ def thread_runner(conn: socket.socket):
             handle_video_uploading(conn, data)
 
         elif req_type == "Ban":
-            token, video_name = parse_two_part_string()
-            if is_user_admin_or_manager(token):
-                video = Video.get_video(video_name)
-                if video:
-                    video.is_ban = True
-                    conn.sendall("BanSuc")
-                else:
-                    conn.sendall("BanFail")
-            else:
-                conn.sendall("BanFail")
-
+            handle_banning_user(conn, data)
         elif req_type == "Unstrike":
-            token, target_username = parse_two_part_string()
-            if is_user_admin_or_manager(token):
-                user = User.get_user_by_username(target_username)
-                if user:
-                    user.is_striked = True
-                    conn.sendall("UnstrikeSuc")
-                else:
-                    conn.sendall("UnstrikeFail")
-            else:
-                conn.sendall("UnstrikeFail")
+            handle_unstricking_user(conn, data)
         elif req_type == "App":
-            token, target_username = parse_two_part_string()
-            if is_user_admin_or_manager(token):
-                user = User.get_user_by_username(target_username)
-                if user:
-                    user.is_approved = True
-                    conn.sendall("AppSuc")
-                else:
-                    conn.sendall("AppFail")
-            else:
-                conn.sendall("AppFail")
+            handle_approving_user(conn, data)
 
         elif req_type in [
             "NewTicket",
@@ -206,7 +220,7 @@ def thread_runner(conn: socket.socket):
 def accept_connections():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
-        s.listen(1)
+        s.listen(10)
         while True:
             conn, addr = s.accept()
             Thread(target=thread_runner, args=(conn,)).start()

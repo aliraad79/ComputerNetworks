@@ -203,8 +203,6 @@ def signup_routine(socket):
     response = get_network_response(socket).split()
     if response[0] == "SingupSuc":
         print("Signup Succesfull!")
-        token = response[1]
-        rule = Rules(int(response[2]))
     elif response[0] == "SingupFail":
         print("Signup Failed!")
 
@@ -221,7 +219,10 @@ def login_routine(socket):
         rule = Rules(int(response[2]))
 
     elif response[0] == "LoginFail":
-        print("Login Failed!")
+        if response[1] == "UserNotFound":
+            print("User Not Found!")
+        elif response[1] == "UserNotApprove":
+            print("Your user is not approve by manager yet!")
 
 
 def manager_menu(socket):

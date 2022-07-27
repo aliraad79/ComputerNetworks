@@ -76,6 +76,7 @@ def logout_user(user_id: str):
 
 def create_manager_account(username, password):
     new_user = User.signup_user(username, password, 3)
+    new_user.is_approved = True
     users.append(new_user)
     return new_user
 
