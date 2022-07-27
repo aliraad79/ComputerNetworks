@@ -44,7 +44,7 @@ def send_login_info(socket):
 
 
 def get_and_send_singup_info(socket):
-    usertype = get_terminal_input("User Type", ["User", "Admin"])
+    usertype = get_terminal_input("User Access level", ["User", "Admin"])
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
     send_message(socket, f"Signup {username} {password} {usertype}")

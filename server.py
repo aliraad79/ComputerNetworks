@@ -96,15 +96,15 @@ def handle_user_auth(conn, data, req_type):
         username, password = parse_two_part_string(data)
         user = login_user(username, password)
         if user:
-            conn.sendall(bytes(f"LoginSuc {user.id} {user.type}", "utf-8"))
+            conn.sendall(bytes(f"LoginSuc {user.id} {user.access_level}", "utf-8"))
         else:
             conn.sendall(b"LoginFail")
 
     elif req_type == "Signup":
         username, password, user_type = parse_three_part_string(data)
-        user = signup_user(username, password, user_type)
+        user = signup_user(username, password, int(user_type))
         if user:
-            conn.sendall(bytes(f"SingupSuc {user.id} {user.type}", "utf-8"))
+            conn.sendall(bytes(f"SingupSuc {user.id} {user.access_level}", "utf-8"))
         else:
             conn.sendall(b"SingupFail")
 

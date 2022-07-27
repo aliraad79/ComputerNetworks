@@ -15,12 +15,15 @@ class TicketState(Enum):
 class Ticket:
     id_iter = itertools.count()
 
-    def __init__(self, user) -> None:
+    def __init__(self, user: User) -> None:
         self.id = next(Ticket.id_iter)
 
         self.opener: User = user
         self.state: TicketState = TicketState.NEW
         self.chats: List[Text] = []
+        self.access_level_for_responding = min(
+            user.access_level + 1, 3
+        )  # max is manager level
 
     def add_chat(self, text: Comment):
         self.chats.append(text)
@@ -38,7 +41,10 @@ class Ticket:
     @classmethod
     def get_user_tickets(cls, user: User):
         return [
-            str(i) for i in tickets if i.opener.id == user.id or user.type in [2, 3]
+            str(ticket)
+            for ticket in tickets
+            if ticket.opener.id == user.id
+            or user.access_level >= ticket.access_level_for_responding
         ]
 
     def __str__(self) -> str:

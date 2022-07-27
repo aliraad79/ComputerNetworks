@@ -11,7 +11,7 @@ def _hash(username: str, password: str):
 class User:
     username: str
     password: str
-    type: int = field(default=0)
+    access_level: int = field(default=0)
     is_Logged_in: bool = field(default=False)
     is_striked: bool = field(default=False)
     is_approved: bool = field(default=False)
@@ -26,13 +26,13 @@ class User:
         return None
 
     @classmethod
-    def signup_user(cls, username, password, user_type):
+    def signup_user(cls, username, password, access_level):
         return cls(
             username,
             password,
-            user_type,
+            access_level,
             id=_hash(username, password),
-            is_approved=user_type == 1,
+            is_approved=access_level == 1,
         )
 
     @classmethod
@@ -89,7 +89,7 @@ def is_user_loggeed_in(token):
 
 def is_user_admin_or_manager(token):
     user = User.get_user(token)
-    if user and user.type in [2, 3]:
+    if user and user.access_level in [2, 3]:
         return user
     return None
 
