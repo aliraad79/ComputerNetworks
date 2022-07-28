@@ -2,11 +2,13 @@ import socket
 import pickle
 from enum import Enum
 from time import sleep
+from log import logger_config
 
 from server import HOST, PORT
 
 token = None
 rule = None
+logger = logger_config()
 
 
 class Rules(Enum):
@@ -27,14 +29,14 @@ def get_terminal_input(
     msg, options, get_input_message="Enter your choice: ", input_type=int
 ):
     if msg != "":
-        print(msg)
+        logger.info(msg)
     for counter, i in enumerate(options):
         print(f"\t{1 + counter}. {i}")
     while True:
         try:
             return input_type(input(get_input_message).strip())
         except ValueError:
-            print("Not valid choice")
+            logger.warning("Not valid choice")
 
 
 def get_network_response(s):
@@ -59,7 +61,7 @@ def get_and_send_singup_info(socket):
 
 
 def send_file(file_path: str, socket) -> None:
-    print("Sending ..........")
+    logger.info("Sending ..........")
     with open(file_path, "rb") as file:
         while True:
             part_of_file = file.read(1024)
@@ -76,9 +78,9 @@ def unstrike_user_routine(socket):
 
     response = get_network_response(socket)
     if response == "UnstrikeSuc":
-        print("Unstriking User Sucessfull")
+        logger.info("Unstriking User Sucessfull")
     elif response == "UnstrikeFail":
-        print("Unstriking User Failed")
+        logger.error("Unstriking User Failed")
 
 
 def ban_user_routine(socket):
@@ -87,25 +89,24 @@ def ban_user_routine(socket):
 
     response = get_network_response(socket)
     if response == "BanSuc":
-        print("Banning video Sucessfull")
+        logger.info("Banning video Sucessfull")
     elif response == "BanFail":
-        print("Banning video Failed")
+        logger.error("Banning video Failed")
 
 
 def add_label_routine(socket):
     video_name = get_terminal_input("", [], "Video name: ", str)
     label = get_terminal_input(
-        "Chose label to add"[
-            "Under 13", "Under 18", "R rated", "Violance", "May find argumantive"
-        ],
+        "Choose label to add",
+        ["Under 13", "Under 18", "R rated", "Violance", "May find argumantive"],
     )
     send_message(socket, f"AddLabel {token} {video_name} {label}")
 
     response = get_network_response(socket)
     if response == "AddLabelSuc":
-        print("Label Added to video Sucessfully")
+        logger.info("Label Added to video Sucessfully")
     elif response == "AddLabelFail":
-        print("Adding label counter")
+        logger.error("Adding label counter error")
 
 
 def comment_on_video_routine(socket):
@@ -115,9 +116,9 @@ def comment_on_video_routine(socket):
 
     response = get_network_response(socket)
     if response == "ReactSuc":
-        print("Comment Submitted")
+        logger.info("Comment Submitted")
     elif response == "ReactFail":
-        print("Comment Fail")
+        logger.error("Comment Fail")
 
 
 def dislike_video_routine(socket):
@@ -126,9 +127,9 @@ def dislike_video_routine(socket):
 
     response = get_network_response(socket)
     if response == "ReactSuc":
-        print("DisLike Submitted")
+        logger.info("DisLike Submitted")
     elif response == "ReactFail":
-        print("DisLike Fail")
+        logger.error("DisLike Fail")
 
 
 def like_video_routine(socket):
@@ -137,9 +138,9 @@ def like_video_routine(socket):
 
     response = get_network_response(socket)
     if response == "ReactSuc":
-        print("Like Submitted")
+        logger.info("Like Submitted")
     elif response == "ReactFail":
-        print("Like Fail")
+        logger.error("Like Fail")
 
 
 def upload_file_routine(socket):
@@ -149,7 +150,7 @@ def upload_file_routine(socket):
     if response == "Upload":
         send_file(video_path, socket)
     elif response == "UploadFail":
-        print("Uploading Video failed")
+        logger.error("Uploading Video failed")
 
 
 def approve_admin_routine(socket):
@@ -157,9 +158,9 @@ def approve_admin_routine(socket):
     send_message(socket, f"App {token} {username}")
     response = get_network_response(socket)
     if response == "AppSuc":
-        print(f"Approved {username}")
+        logger.info(f"Approved {username}")
     elif response == "AppFail":
-        print(f"Can't Approve {username}")
+        logger.error(f"Can't Approve {username}")
 
 
 def new_ticket_routine(socket):
@@ -167,9 +168,9 @@ def new_ticket_routine(socket):
     send_message(socket, f"NewTicket {token} {text}")
     response = get_network_response(socket)
     if response == "NewTicketSuc":
-        print(f"Ticket Created")
+        logger.info(f"Ticket Created")
     elif response == "NewTicketFail":
-        print(f"Creating ticket has counter error")
+        logger.error(f"Creating ticket has counter error")
 
 
 def answer_ticket_routine(socket):
@@ -178,9 +179,9 @@ def answer_ticket_routine(socket):
     send_message(socket, f"AnswerTicket {token} {ticket_id} {text}")
     response = get_network_response(socket)
     if response == "AnswerTicketSuc":
-        print(f"New Comment Added")
+        logger.info(f"New Comment Added")
     elif response == "AnswerTicketFail":
-        print(f"Answering ticket has counter error")
+        logger.error(f"Answering ticket has counter error")
 
 
 def change_ticket_state_routine(socket):
@@ -189,9 +190,9 @@ def change_ticket_state_routine(socket):
     send_message(socket, f"ChangeTicketState {token} {ticket_id} {state}")
     response = get_network_response(socket)
     if response == "ChangeTicketStateSuc":
-        print(f"Ticket State Changed")
+        logger.info(f"Ticket State Changed")
     elif response == "ChangeTicketStateFail":
-        print(f"changing ticket state has counter error")
+        logger.error(f"changing ticket state has counter error")
 
 
 def see_all_tickets_routine(socket):
@@ -199,13 +200,14 @@ def see_all_tickets_routine(socket):
     data = s.recv(1024)
 
     if data.startswith(b"GetTicketsSuc"):
+        logger.info("Your Tickets:")
         pickle_data = data[len("GetTicketsSuc ") :]
 
         target_data = pickle.loads(pickle_data)
         for i in target_data:
             print(i)
     elif data.startswith(b"GetTicketsFail"):
-        print(f"getting all tickets has counter error")
+        logger.error(f"getting all tickets has counter error")
 
 
 def logout_routine(socket):
@@ -214,10 +216,10 @@ def logout_routine(socket):
     send_message(socket, f"Logout {token}")
     response = get_network_response(socket)
     if response == "LogoutSuc":
-        print("Logout Succesfull")
+        logger.info("Logout Succesfull")
         rule = token = None
     elif response == "LogoutFail":
-        print("Logout failed")
+        logger.error("Logout failed")
 
 
 def signup_routine(socket):
@@ -226,9 +228,9 @@ def signup_routine(socket):
     get_and_send_singup_info(socket)
     response = get_network_response(socket).split()
     if response[0] == "SingupSuc":
-        print("Signup Succesfull!")
+        logger.info("Signup Succesfull!")
     elif response[0] == "SingupFail":
-        print("Signup Failed!")
+        logger.error("Signup Failed!")
 
 
 def login_routine(socket):
@@ -238,15 +240,15 @@ def login_routine(socket):
 
     response = get_network_response(socket).split()
     if response[0] == "LoginSuc":
-        print("Login Succesfull!")
+        logger.info("Login Succesfull!")
         token = response[1]
         rule = Rules(int(response[2]))
 
     elif response[0] == "LoginFail":
         if response[1] == "UserNotFound":
-            print("User Not Found!")
+            logger.error("User Not Found!")
         elif response[1] == "UserNotApprove":
-            print("Your user is not approve by manager yet!")
+            logger.warning("Your user is not approve by manager yet!")
 
 
 def manager_menu(socket):
@@ -289,6 +291,7 @@ def admin_menu(socket):
             "Change Ticket State",
             "Logout",
             "Disconnect",
+            "GetAllVideos",
             # view video
         ],
     )
@@ -311,6 +314,9 @@ def admin_menu(socket):
     elif inp == 9:
         socket.close()
         exit()
+    elif inp == 10:
+        send_message(socket, "GetAllVideos")
+        print(get_network_response(socket))
 
 
 def user_menu(socket):
@@ -379,6 +385,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             user_thread(s)
         except ConnectionResetError:
-            print("Connection Reset")
+            logger.error("Connection Reset")
             s.close()
             break
