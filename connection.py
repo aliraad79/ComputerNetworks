@@ -68,6 +68,7 @@ def send_file(file_path: str, socket) -> None:
             if not part_of_file:
                 break
             socket.sendall(part_of_file)
+    # TODO: there must be a better way than this
     sleep(1)
     socket.sendall(b"VideoFinished")
 

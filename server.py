@@ -4,8 +4,9 @@ import pickle
 
 from threading import Thread
 from dotenv import load_dotenv
-from ticket import Text, Ticket, create_ticket
 
+from ticket import Text, Ticket, create_ticket
+from video import Video, add_video
 from users import (
     User,
     login_user,
@@ -15,10 +16,9 @@ from users import (
     is_user_loggeed_in,
     is_user_admin_or_manager,
 )
-from video import Video, add_video
 from serilizers import (
-    parse_two_part_string,
     parse_one_part_string,
+    parse_two_part_string,
     parse_three_part_string,
 )
 
@@ -141,6 +141,7 @@ def handle_video_uploading(conn, data):
     else:
         conn.sendall(b"UploadFail")
 
+
 def handle_adding_label_to_video(conn, data):
     token, video_name, label_id = parse_three_part_string(data)
     video = Video.get_video(video_name)
@@ -149,6 +150,7 @@ def handle_adding_label_to_video(conn, data):
         conn.sendall(b"AddLabelSuc")
     else:
         conn.sendall(b"AddLabelFail")
+
 
 def handle_approving_user(conn, data):
     token, target_username = parse_two_part_string(data)
