@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
 import hashlib
 from typing import List
+from dataclasses import dataclass, field
 
 
 def _hash(username: str, password: str):

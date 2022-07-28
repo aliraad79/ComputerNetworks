@@ -1,8 +1,10 @@
+import itertools
+
 from enum import Enum
 from typing import List
+
 from users import User
 from video import Comment
-import itertools
 
 
 class TicketState(Enum):

@@ -1,6 +1,6 @@
-from dataclasses import dataclass
-from typing import List
 from enum import Enum
+from typing import List
+from dataclasses import dataclass
 
 from users import User
 
