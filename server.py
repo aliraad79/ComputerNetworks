@@ -1,6 +1,8 @@
 import socket
 import os
 import pickle
+import cv2
+import struct
 
 from threading import Thread
 from dotenv import load_dotenv
@@ -124,7 +126,8 @@ def handle_video_uploading(conn, data):
     user = User.get_user(token)
     if user:
         conn.sendall(b"Upload")
-        with open(f"videos/{video_name}", "wb") as file:
+        os.makedirs("videos", exist_ok=True)
+        with open(os.path.join("videos", video_name), "wb") as file:
             while True:
                 bytes_read = conn.recv(1024)
                 if not bytes_read:
@@ -142,6 +145,30 @@ def handle_video_uploading(conn, data):
         conn.sendall(b"UploadFail")
 
 
+def handle_video_streaming(conn, data):
+    token, video_name = parse_two_part_string(data)
+
+    video = Video.get_video(video_name)
+    user = User.get_user(token)
+
+    if user and video:
+        conn.sendall(b"View")
+        cap = cv2.VideoCapture(os.path.join("videos", video.name))
+        while(cap.isOpened()):
+            ret, frame = cap.read()
+            ret, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 30])
+            a = pickle.dumps(buffer)
+            message = struct.pack("Q",len(a))+a
+            conn.sendall(message)
+            # cv2.imshow('Sending...',frame)
+            # key = cv2.waitKey(10) 
+            # if key  == 13:
+            #     cap.release()
+            #     cv2.destroyAllWindows()
+            #     break
+
+    else:
+        conn.sendall(b"ViewFail")
 def handle_adding_label_to_video(conn, data):
     token, video_name, label_id = parse_three_part_string(data)
     video = Video.get_video(video_name)
@@ -210,6 +237,8 @@ def thread_runner(conn: socket.socket):
 
         elif req_type == "UploadVideo":
             handle_video_uploading(conn, data)
+        elif req_type == "ViewVideo":
+            handle_video_streaming(conn, data)
         elif req_type == "AddLabel":
             handle_adding_label_to_video(conn, data)
 

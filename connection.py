@@ -1,8 +1,12 @@
 import socket
 import pickle
+import struct
+import cv2
+
 from enum import Enum
 from time import sleep
 from log import logger_config
+from pathlib import Path
 
 from server import HOST, PORT
 
@@ -63,11 +67,12 @@ def get_and_send_singup_info(socket):
 def send_file(file_path: str, socket) -> None:
     logger.info("Sending ..........")
     with open(file_path, "rb") as file:
-        while True:
-            part_of_file = file.read(1024)
-            if not part_of_file:
-                break
-            socket.sendall(part_of_file)
+        socket.sendfile(file)
+        # while True:
+        #     part_of_file = file.read(1024)
+        #     if not part_of_file:
+        #         break
+        #     socket.sendall(part_of_file)
     # TODO: there must be a better way than this
     sleep(1)
     socket.sendall(b"VideoFinished")
@@ -82,6 +87,9 @@ def unstrike_user_routine(socket):
         logger.info("Unstriking User Sucessfull")
     elif response == "UnstrikeFail":
         logger.error("Unstriking User Failed")
+    else:
+        pass
+        # TODO log or raise exception
 
 
 def ban_user_routine(socket):
@@ -146,13 +154,44 @@ def like_video_routine(socket):
 
 def upload_file_routine(socket):
     video_path = get_terminal_input("", [], "Video Path: ", str)
-    send_message(socket, f"UploadVideo {token} {video_path.split('/')[0]}")
+    # TODO what's the filename that should be sent to server
+    send_message(socket, f"UploadVideo {token} {Path(video_path).name}")
     response = get_network_response(socket)
     if response == "Upload":
         send_file(video_path, socket)
     elif response == "UploadFail":
         logger.error("Uploading Video failed")
 
+def view_video_routine(socket):
+    video_name = get_terminal_input("", [], "Video Name: ", str)
+    send_message(socket, f"ViewVideo {token} {video_name}")
+    response = get_network_response(socket)
+    if response == "View":
+        #used in handling binary data from network connections
+        data = b""
+        # Q: unsigned long long integer(8 bytes)
+        payload_size = struct.calcsize("Q")
+        while True:
+            while len(data) < payload_size:
+                packet = socket.recv(4*1024)
+                if not packet: break
+                data+=packet
+            packed_msg_size = data[:payload_size]
+            data = data[payload_size:]
+            msg_size = struct.unpack("Q", packed_msg_size)[0]
+            while len(data) < msg_size:
+                data += socket.recv(4*1024)
+            frame_data = data[:msg_size]
+            data  = data[msg_size:]
+            frame = pickle.loads(frame_data)
+            frame_image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+            cv2.imshow("Receiving...", frame_image)
+            key = cv2.waitKey(1) 
+            if key  == 13:
+                cv2.destroyAllWindows()
+                break
+    elif response == "ViewFail":
+        logger.error("Viewing Video failed")
 
 def approve_admin_routine(socket):
     username = get_terminal_input("", [], "Username: ", str)
@@ -325,7 +364,6 @@ def user_menu(socket):
         "Welcome To Wetube",
         [
             "Upload Video",
-            # view video
             "Like video",
             "DisLike video",
             "Comment On video",
@@ -335,6 +373,7 @@ def user_menu(socket):
             "GetAllVideos",
             "Logout",
             "Disconnect",
+            "View video",
         ],
     )
     if inp == 1:
@@ -359,6 +398,8 @@ def user_menu(socket):
     elif inp == 10:
         socket.close()
         exit()
+    elif inp == 11:
+        view_video_routine(socket)
 
 
 def user_thread(socket):

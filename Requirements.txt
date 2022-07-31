@@ -1,3 +1,4 @@
-python-dotenv
-colorlog
-pickle
+colorama==0.4.5
+colorlog==6.6.0
+pickle-mixin==1.0.2
+python-dotenv==0.20.0
