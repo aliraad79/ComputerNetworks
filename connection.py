@@ -2,17 +2,25 @@ import socket
 import pickle
 import struct
 import cv2
+import os
 
 from enum import Enum
 from time import sleep
+
+from dotenv import load_dotenv
 from log import logger_config
 from pathlib import Path
 
-from server import HOST, PORT
+
+load_dotenv()
+
+HOST = os.getenv("HOST")
+PROXY_PORT = int(os.getenv("PROXY_PORT"))
+logger = logger_config()
+
 
 token = None
 rule = None
-logger = logger_config()
 
 
 class Rules(Enum):
@@ -422,7 +430,7 @@ def user_thread(socket):
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
+    s.connect((HOST, PROXY_PORT))
     while True:
         try:
             user_thread(s)
