@@ -12,12 +12,35 @@ PORT = int(os.getenv("PORT"))
 PROXY_PORT = int(os.getenv("PROXY_PORT"))
 
 
-ddos_list = {} # (address, port) : [last_check, allowance]
+ddos_list = {}  # (address, port) : [last_check, allowance]
 black_list = []
 
 rate = 20
-per = 60  # seconds
+per = 60
 last_check = datetime.now()
+
+
+def prevent_ddos(address, data):
+    for i in data.decode("utf-8").split("\0"):
+        if address not in ddos_list.keys():
+            ddos_list[address] = [last_check, rate]
+
+        current = datetime.now()
+        time_passed = (current - ddos_list[address][0]).seconds
+        ddos_list[address][0] = current
+        ddos_list[address][1] += time_passed * (rate / per)
+
+        if ddos_list[address][1] > rate:
+            ddos_list[address][1] = rate
+
+        allowance = ddos_list[address][1]
+        if allowance < 1.0:
+            # Block ip
+            print(f"{address} IP is blocked")
+            black_list.append(address)
+        else:
+            # It is ok
+            ddos_list[address][1] -= 1.0
 
 
 def thread_runner(server_socket: socket.socket, client_socket: socket.socket, address):
@@ -31,26 +54,7 @@ def thread_runner(server_socket: socket.socket, client_socket: socket.socket, ad
             print(f"{address} is Blocked")
             break
         if data.decode("utf-8").startswith("Ping"):
-            for i in data.decode("utf-8").split("\0"):
-                if address not in ddos_list.keys():
-                    ddos_list[address] = [last_check, rate]
-
-                current = datetime.now()
-                time_passed = (current - ddos_list[address][0]).seconds
-                ddos_list[address][0] = current
-                ddos_list[address][1] += time_passed * (rate / per)
-
-                if ddos_list[address][1] > rate:
-                    ddos_list[address][1] = rate
-                
-                allowance = ddos_list[address][1]
-                if allowance < 1.0:
-                    # Block ip
-                    print(f"{address} IP is blocked")
-                    black_list.append(address)
-                else:
-                    # It is ok
-                    ddos_list[address][1] -= 1.0
+            prevent_ddos(address, data)
         else:
             # Proxy request
             server_socket.sendall(data)
