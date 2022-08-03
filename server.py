@@ -1,8 +1,6 @@
 import socket
 import os
 import pickle
-import cv2
-import struct
 
 from threading import Thread
 from dotenv import load_dotenv
@@ -23,6 +21,7 @@ from serilizers import (
     parse_two_part_string,
     parse_three_part_string,
 )
+from video_player import VideoPlayerServer
 
 load_dotenv()
 
@@ -152,20 +151,10 @@ def handle_video_streaming(conn, data):
     user = User.get_user(token)
 
     if user and video:
+        video_player_server = VideoPlayerServer()
         conn.sendall(b"View")
-        cap = cv2.VideoCapture(os.path.join("videos", video.name))
-        while(cap.isOpened()):
-            ret, frame = cap.read()
-            ret, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 30])
-            a = pickle.dumps(buffer)
-            message = struct.pack("Q",len(a))+a
-            conn.sendall(message)
-            # cv2.imshow('Sending...',frame)
-            # key = cv2.waitKey(10) 
-            # if key  == 13:
-            #     cap.release()
-            #     cv2.destroyAllWindows()
-            #     break
+        video_player_server.start(conn, video)
+
 
     else:
         conn.sendall(b"ViewFail")
@@ -270,4 +259,5 @@ def accept_connections():
 if __name__ == "__main__":
     create_manager_account(os.getenv("Manger_Username"), os.getenv("Manager_Password"))
     create_manager_account("t", "t")
+    signup_user("a", "a", 1)
     Thread(target=accept_connections).start()

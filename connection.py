@@ -1,7 +1,5 @@
 import socket
 import pickle
-import struct
-import cv2
 import os
 
 from enum import Enum
@@ -11,11 +9,13 @@ from dotenv import load_dotenv
 from log import logger_config
 from pathlib import Path
 
+from video_player import VideoPlayerClient
 
 load_dotenv()
 
 HOST = os.getenv("HOST")
 PROXY_PORT = int(os.getenv("PROXY_PORT"))
+PORT = int(os.getenv("PORT"))
 logger = logger_config()
 
 
@@ -175,29 +175,8 @@ def view_video_routine(socket):
     send_message(socket, f"ViewVideo {token} {video_name}")
     response = get_network_response(socket)
     if response == "View":
-        #used in handling binary data from network connections
-        data = b""
-        # Q: unsigned long long integer(8 bytes)
-        payload_size = struct.calcsize("Q")
-        while True:
-            while len(data) < payload_size:
-                packet = socket.recv(4*1024)
-                if not packet: break
-                data+=packet
-            packed_msg_size = data[:payload_size]
-            data = data[payload_size:]
-            msg_size = struct.unpack("Q", packed_msg_size)[0]
-            while len(data) < msg_size:
-                data += socket.recv(4*1024)
-            frame_data = data[:msg_size]
-            data  = data[msg_size:]
-            frame = pickle.loads(frame_data)
-            frame_image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
-            cv2.imshow("Receiving...", frame_image)
-            key = cv2.waitKey(1) 
-            if key  == 13:
-                cv2.destroyAllWindows()
-                break
+        video_player_client = VideoPlayerClient()
+        video_player_client.start(socket)
     elif response == "ViewFail":
         logger.error("Viewing Video failed")
 
@@ -430,7 +409,7 @@ def user_thread(socket):
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PROXY_PORT))
+    s.connect((HOST, PORT))
     while True:
         try:
             user_thread(s)
