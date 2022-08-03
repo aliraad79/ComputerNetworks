@@ -47,6 +47,10 @@ class Video:
     def get_all(cls):
         return f"Videos:\n" + f"\n".join([str(i) for i in videos])
 
+    @classmethod
+    def get_all_unband_videos(cls):
+        return f"Videos:\n" + f"\n".join([str(i) for i in videos if not i.is_ban])
+
     def __str__(self) -> str:
         return f"{self.name} {self.likes}|{self.dislikes} Comments: " + "\n".join(
             [str(i) for i in self.comments]

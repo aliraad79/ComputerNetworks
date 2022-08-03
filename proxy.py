@@ -20,6 +20,12 @@ per = 60
 last_check = datetime.now()
 
 
+def proxy_request(server_socket, client_socket, data):
+    server_socket.sendall(data)
+    server_data = server_socket.recv(1024)
+    client_socket.sendall(server_data)
+
+
 def prevent_ddos(address, data):
     for i in data.decode("utf-8").split("\0"):
         if address not in ddos_list.keys():
@@ -53,13 +59,14 @@ def thread_runner(server_socket: socket.socket, client_socket: socket.socket, ad
         if address in black_list:
             print(f"{address} is Blocked")
             break
-        if data.decode("utf-8").startswith("Ping"):
-            prevent_ddos(address, data)
-        else:
-            # Proxy request
-            server_socket.sendall(data)
-            server_data = server_socket.recv(1024)
-            client_socket.sendall(server_data)
+
+        try:
+            if data.decode("utf-8").startswith("Ping"):
+                prevent_ddos(address, data)
+            else:
+                proxy_request(server_socket, client_socket, data)
+        except:
+            proxy_request(server_socket, client_socket, data)
 
 
 if __name__ == "__main__":
