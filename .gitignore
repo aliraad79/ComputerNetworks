@@ -169,3 +169,5 @@ cython_debug/
 test.mp4
 
 videos/*
+
+.idea
