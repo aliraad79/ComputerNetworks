@@ -33,15 +33,17 @@ def handle_user_reacts(conn, data, req_type):
     token, video_name = parse_two_part_string(data)
     if is_user_loggeed_in(token):
         video = Video.get_video(video_name)
+        if not video:
+            conn.sendall(b"ReactFail")
+        else:
+            if req_type == "Like":
+                video.likes += 1
+            elif req_type == "DisLike":
+                video.dislikes += 1
+            elif req_type == "CommentVideo":
+                video.add_comment(User.get_user(token), "".join(data.split()[3:]))
 
-        if req_type == "Like":
-            video.likes += 1
-        elif req_type == "DisLike":
-            video.dislikes += 1
-        elif req_type == "CommentVideo":
-            video.add_comment(User.get_user(token), "".join(data.split()[3:]))
-
-        conn.sendall(b"ReactSuc")
+            conn.sendall(b"ReactSuc")
     else:
         conn.sendall(b"ReactFail")
 
@@ -138,8 +140,10 @@ def handle_video_uploading(conn, data):
                     pass
 
                 file.write(bytes_read)
+                conn.sendall(b"OK")
 
             add_video(Video(video_name, user))
+            conn.sendall(b"OK")
     else:
         conn.sendall(b"UploadFail")
 
@@ -221,7 +225,7 @@ def thread_runner(conn: socket.socket):
             handle_user_reacts(conn, data, req_type)
 
         elif req_type == "GetAllVideos":
-            videos = Video.get_all()
+            videos = Video.get_all_unband_videos()
             conn.sendall(bytes(videos, "utf-8"))
 
         elif req_type == "UploadVideo":
