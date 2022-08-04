@@ -140,10 +140,10 @@ def handle_video_uploading(conn, data):
                     pass
 
                 file.write(bytes_read)
-                conn.sendall(b"OK")
+                # conn.sendall(b"OK")
 
             add_video(Video(video_name, user))
-            conn.sendall(b"OK")
+            # conn.sendall(b"OK")
     else:
         conn.sendall(b"UploadFail")
 

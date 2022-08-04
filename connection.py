@@ -85,10 +85,12 @@ def send_file(file_path: str, socket) -> None:
         #     if conformation == "OK":
         #         pass
 
+
     # TODO: there must be a better way than this
-    # sleep(2)
+    sleep(1)
     socket.sendall(b"VideoFinished")
-    conformation = socket.recv(1024).decode("utf-8")
+    print("video finished")
+    # conformation = socket.recv(1024).decode("utf-8")
 
 
 def unstrike_user_routine(socket):
