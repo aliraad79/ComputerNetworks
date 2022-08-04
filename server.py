@@ -154,10 +154,10 @@ def handle_video_streaming(conn, data):
         video_player_server = VideoPlayerServer()
         conn.sendall(b"View")
         video_player_server.start(conn, video)
-
-
     else:
         conn.sendall(b"ViewFail")
+
+
 def handle_adding_label_to_video(conn, data):
     token, video_name, label_id = parse_three_part_string(data)
     video = Video.get_video(video_name)
