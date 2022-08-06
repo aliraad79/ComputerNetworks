@@ -1,17 +1,21 @@
 import socket
 import pickle
 import os
+
 from enum import Enum
 from time import sleep
 
 from dotenv import load_dotenv
 from log import logger_config
+from pathlib import Path
 
+from video_player import VideoPlayerClient
 
 load_dotenv()
 
 HOST = os.getenv("HOST")
 PROXY_PORT = int(os.getenv("PROXY_PORT"))
+PORT = int(os.getenv("PORT"))
 logger = logger_config()
 
 
@@ -71,19 +75,22 @@ def get_and_send_singup_info(socket):
 def send_file(file_path: str, socket) -> None:
     logger.info("Sending ..........")
     with open(file_path, "rb") as file:
-        while True:
-            part_of_file = file.read(1024)
-            if not part_of_file:
-                break
-            socket.sendall(part_of_file)
-            conformation = socket.recv(1024).decode("utf-8")
-            if conformation == "OK":
-                pass
+        socket.sendfile(file)
+        # while True:
+        #     part_of_file = file.read(1024)
+        #     if not part_of_file:
+        #         break
+        #     socket.sendall(part_of_file)
+        #     conformation = socket.recv(1024).decode("utf-8")
+        #     if conformation == "OK":
+        #         pass
+
 
     # TODO: there must be a better way than this
-    # sleep(2)
+    sleep(1)
     socket.sendall(b"VideoFinished")
-    conformation = socket.recv(1024).decode("utf-8")
+    print("video finished")
+    # conformation = socket.recv(1024).decode("utf-8")
 
 
 def unstrike_user_routine(socket):
@@ -159,13 +166,23 @@ def like_video_routine(socket):
 
 def upload_file_routine(socket):
     video_path = get_terminal_input("", [], "Video Path: ", str)
-    send_message(socket, f"UploadVideo {token} {video_path.split('/')[0]}")
+    # TODO what's the filename that should be sent to server
+    send_message(socket, f"UploadVideo {token} {Path(video_path).name}")
     response = get_network_response(socket)
     if response == "Upload":
         send_file(video_path, socket)
     elif response == "UploadFail":
         logger.error("Uploading Video failed")
 
+def view_video_routine(socket):
+    video_name = get_terminal_input("", [], "Video Name: ", str)
+    send_message(socket, f"ViewVideo {token} {video_name}")
+    response = get_network_response(socket)
+    if response == "View":
+        video_player_client = VideoPlayerClient()
+        video_player_client.start(socket)
+    elif response == "ViewFail":
+        logger.error("Viewing Video failed")
 
 def approve_admin_routine(socket):
     username = get_terminal_input("", [], "Username: ", str)
@@ -338,7 +355,6 @@ def user_menu(socket):
         "Welcome To Wetube",
         [
             "Upload Video",
-            # view video
             "Like video",
             "DisLike video",
             "Comment On video",
@@ -348,6 +364,7 @@ def user_menu(socket):
             "See all videos",
             "Logout",
             "Disconnect",
+            "View video",
         ],
     )
     if inp == 1:
@@ -372,6 +389,8 @@ def user_menu(socket):
     elif inp == 10:
         socket.close()
         exit()
+    elif inp == 11:
+        view_video_routine(socket)
 
 
 def user_thread(socket):
@@ -394,7 +413,7 @@ def user_thread(socket):
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PROXY_PORT))
+    s.connect((HOST, PORT))
     while True:
         try:
             user_thread(s)

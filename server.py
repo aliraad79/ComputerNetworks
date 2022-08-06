@@ -21,6 +21,7 @@ from serilizers import (
     parse_two_part_string,
     parse_three_part_string,
 )
+from video_player import VideoPlayerServer
 
 load_dotenv()
 
@@ -126,7 +127,8 @@ def handle_video_uploading(conn, data):
     user = User.get_user(token)
     if user:
         conn.sendall(b"Upload")
-        with open(f"videos/{video_name}", "wb") as file:
+        os.makedirs("videos", exist_ok=True)
+        with open(os.path.join("videos", video_name), "wb") as file:
             while True:
                 bytes_read = conn.recv(1024)
                 if not bytes_read:
@@ -138,12 +140,26 @@ def handle_video_uploading(conn, data):
                     pass
 
                 file.write(bytes_read)
-                conn.sendall(b"OK")
+                # conn.sendall(b"OK")
 
             add_video(Video(video_name, user))
-            conn.sendall(b"OK")
+            # conn.sendall(b"OK")
     else:
         conn.sendall(b"UploadFail")
+
+
+def handle_video_streaming(conn, data):
+    token, video_name = parse_two_part_string(data)
+
+    video = Video.get_video(video_name)
+    user = User.get_user(token)
+
+    if user and video:
+        video_player_server = VideoPlayerServer()
+        conn.sendall(b"View")
+        video_player_server.start(conn, video)
+    else:
+        conn.sendall(b"ViewFail")
 
 
 def handle_adding_label_to_video(conn, data):
@@ -214,6 +230,8 @@ def thread_runner(conn: socket.socket):
 
         elif req_type == "UploadVideo":
             handle_video_uploading(conn, data)
+        elif req_type == "ViewVideo":
+            handle_video_streaming(conn, data)
         elif req_type == "AddLabel":
             handle_adding_label_to_video(conn, data)
 
@@ -245,4 +263,5 @@ def accept_connections():
 if __name__ == "__main__":
     create_manager_account(os.getenv("Manger_Username"), os.getenv("Manager_Password"))
     create_manager_account("t", "t")
+    signup_user("a", "a", 1)
     Thread(target=accept_connections).start()
