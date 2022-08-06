@@ -5,7 +5,7 @@ import time
 import cv2
 
 from threading import Thread
-from transport import send_message, receive_message
+from utils.transport import send_message, receive_message
 
 
 class VideoPlayerClient:

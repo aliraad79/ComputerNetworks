@@ -6,10 +6,10 @@ from enum import Enum
 from time import sleep
 
 from dotenv import load_dotenv
-from log import logger_config
+from utils.log import logger_config
 from pathlib import Path
 
-from video_player import VideoPlayerClient
+from modules.video_player import VideoPlayerClient
 
 load_dotenv()
 

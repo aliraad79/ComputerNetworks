@@ -5,9 +5,9 @@ import pickle
 from threading import Thread
 from dotenv import load_dotenv
 
-from ticket import Text, Ticket, create_ticket
-from video import Video, add_video
-from users import (
+from modules.ticket import Text, Ticket, create_ticket
+from modules.video import Video, add_video
+from modules.users import (
     User,
     login_user,
     create_manager_account,
@@ -16,12 +16,12 @@ from users import (
     is_user_loggeed_in,
     is_user_admin_or_manager,
 )
-from serilizers import (
+from utils.serilizers import (
     parse_one_part_string,
     parse_two_part_string,
     parse_three_part_string,
 )
-from video_player import VideoPlayerServer
+from modules.video_player import VideoPlayerServer
 
 load_dotenv()
 

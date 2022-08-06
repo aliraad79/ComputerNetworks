@@ -3,8 +3,8 @@ import itertools
 from enum import Enum
 from typing import List
 
-from users import User
-from video import Comment
+from modules.users import User
+from modules.video import Comment
 
 
 class TicketState(Enum):
