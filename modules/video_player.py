@@ -21,19 +21,20 @@ class VideoPlayerClient:
             frame = pickle.loads(frame_bytes)
             frame_image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
             cv2.imshow("Receiving...", frame_image)
-            key = cv2.waitKey(10)
+            key = cv2.waitKey(1)
             if key == ord('q'):
                 send_message(socket_connection, bytes("exit", 'utf-8'))
             elif key == ord('p'):
                 send_message(socket_connection, bytes("pause", 'utf-8'))
                 while True:
                     cv2.imshow("Receiving...", frame_image)
-                    key = cv2.waitKey(10)
+                    key = cv2.waitKey(1)
                     if key == ord('r'):
                         send_message(socket_connection, bytes("resume", 'utf-8'))
                         break
                     elif key == ord('q'):
                         send_message(socket_connection, bytes("exit", 'utf-8'))
+                        break
 
 
 class VideoPlayerServer:
@@ -72,16 +73,17 @@ class VideoPlayerServer:
     def start_streaming(self, socket_connection, video):
         cap = cv2.VideoCapture(os.path.join("videos", video.name))
         while cap.isOpened():
+            if self.finished:
+                break
+
             if self.paused:
                 time.sleep(0.1)
                 continue
 
-            if self.finished:
-                break
-
             ret, frame = cap.read()
             if not ret:
                 break
+            time.sleep(0.025)
             ret, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 25])
             message_bytes = pickle.dumps(buffer)
             send_message(socket_connection, message_bytes)
