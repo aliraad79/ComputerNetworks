@@ -43,8 +43,8 @@ def receive_message_chunked(socket_connection: socket.socket) -> list[bytes]:
     receive_buffer = receive_buffer[payload_size:]
     msg_size = struct.unpack("Q", packed_msg_size)[0]
 
-    while len(receive_buffer) < msg_size:
-        receive_size = min(4 * 1024, msg_size - len(receive_buffer))
+    while received_size < msg_size:
+        receive_size = min(1024, msg_size - len(receive_buffer))
         new_received_data = socket_connection.recv(receive_size)
 
         receive_buffer += new_received_data
