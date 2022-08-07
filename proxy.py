@@ -4,13 +4,13 @@ import os
 from datetime import datetime
 from threading import Thread
 from dotenv import load_dotenv
+from utils.transport import send_message, receive_message
 
 load_dotenv()
 
 HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
 PROXY_PORT = int(os.getenv("PROXY_PORT"))
-
 
 ddos_list = {}  # (address, port) : [last_check, allowance]
 black_list = []
@@ -20,14 +20,14 @@ per = 60
 last_check = datetime.now()
 
 
-def proxy_request(server_socket, client_socket, data):
-    server_socket.sendall(data)
-    server_data = server_socket.recv(1024)
-    client_socket.sendall(server_data)
+def proxy_request(server_socket_conn: socket.socket, client_socket_conn: socket.socket, data: bytes):
+    send_message(server_socket_conn, data)
+    server_data = receive_message(server_socket_conn)
+    send_message(client_socket_conn, server_data)
 
 
 def prevent_ddos(address, data):
-    for i in data.decode("utf-8").split("\0"):
+    for _ in data.decode("utf-8").split("\0"):
         if address not in ddos_list.keys():
             ddos_list[address] = [last_check, rate]
 
@@ -49,9 +49,9 @@ def prevent_ddos(address, data):
             ddos_list[address][1] -= 1.0
 
 
-def thread_runner(server_socket: socket.socket, client_socket: socket.socket, address):
+def thread_runner(server_socket_conn: socket.socket, client_socket_conn: socket.socket, address):
     while True:
-        data = client_socket.recv(1024)
+        data = receive_message(client_socket_conn)
         print(f"Proxy Received: {data}")
         if data == "":
             break
@@ -64,9 +64,9 @@ def thread_runner(server_socket: socket.socket, client_socket: socket.socket, ad
             if data.decode("utf-8").startswith("Ping"):
                 prevent_ddos(address, data)
             else:
-                proxy_request(server_socket, client_socket, data)
+                proxy_request(server_socket_conn, client_socket_conn, data)
         except:
-            proxy_request(server_socket, client_socket, data)
+            proxy_request(server_socket_conn, client_socket_conn, data)
 
 
 if __name__ == "__main__":

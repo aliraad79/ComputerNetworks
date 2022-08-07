@@ -8,6 +8,8 @@ from time import sleep
 from dotenv import load_dotenv
 from utils.log import logger_config
 from pathlib import Path
+from utils.transport import receive_message as transport_receive_message
+from utils.transport import send_message as transport_send_message
 
 from modules.video_player import VideoPlayerClient
 
@@ -17,7 +19,6 @@ HOST = os.getenv("HOST")
 PROXY_PORT = int(os.getenv("PROXY_PORT"))
 PORT = int(os.getenv("PORT"))
 logger = logger_config()
-
 
 token = None
 rule = None
@@ -38,7 +39,7 @@ class ChossableLabel(Enum):
 
 
 def get_terminal_input(
-    msg, options, get_input_message="Enter your choice: ", input_type=int
+        msg, options, get_input_message="Enter your choice: ", input_type=int
 ):
     if msg != "":
         logger.info(msg)
@@ -51,188 +52,188 @@ def get_terminal_input(
             logger.warning("Not valid choice")
 
 
-def get_network_response(s):
-    return s.recv(1024).decode()
+def get_network_response(socket_conn: socket.socket):
+    return transport_receive_message(socket_conn).decode()
 
 
-def send_message(socket, msg):
-    socket.sendall(bytes(msg, "utf-8"))
+def send_message(socket_conn: socket.socket, msg):
+    transport_send_message(socket_conn, bytes(msg, "utf-8"))
 
 
-def send_login_info(socket):
+def send_login_info(socket_conn: socket.socket):
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
-    send_message(socket, f"Login {username} {password}")
+    send_message(socket_conn, f"Login {username} {password}")
 
 
-def get_and_send_singup_info(socket):
+def get_and_send_signup_info(socket_conn: socket.socket):
     usertype = get_terminal_input("User Access level", ["User", "Admin"])
     username = get_terminal_input("", [], "Username: ", str)
     password = get_terminal_input("", [], "Password: ", str)
-    send_message(socket, f"Signup {username} {password} {usertype}")
+    send_message(socket_conn, f"Signup {username} {password} {usertype}")
 
 
-def send_file(file_path: str, socket) -> None:
+def send_file(file_path: str, socket_conn: socket.socket) -> None:
     logger.info("Sending ..........")
     with open(file_path, "rb") as file:
-        socket.sendfile(file)
-        # while True:
-        #     part_of_file = file.read(1024)
-        #     if not part_of_file:
-        #         break
-        #     socket.sendall(part_of_file)
-        #     conformation = socket.recv(1024).decode("utf-8")
-        #     if conformation == "OK":
-        #         pass
+        os.path.getsize(file.name)
+        socket_conn.sendfile(file)
 
-
-    # TODO: there must be a better way than this
     sleep(1)
-    socket.sendall(b"VideoFinished")
+
+    confirmation = get_network_response(socket_conn)
+    assert confirmation == "ok"
+
+    send_message(socket_conn, "VideoFinished")
+
+    confirmation = get_network_response(socket_conn)
+    assert confirmation == "ok"
     print("video finished")
-    # conformation = socket.recv(1024).decode("utf-8")
 
 
-def unstrike_user_routine(socket):
+def unstrike_user_routine(socket_conn: socket.socket):
     target_username = get_terminal_input("", [], "username: ", str)
-    send_message(socket, f"Unstrike {token} {target_username}")
+    send_message(socket_conn, f"Unstrike {token} {target_username}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "UnstrikeSuc":
         logger.info("Unstriking User Sucessfull")
     elif response == "UnstrikeFail":
         logger.error("Unstriking User Failed")
 
 
-def ban_user_routine(socket):
+def ban_user_routine(socket_conn: socket.socket):
     video_name = get_terminal_input("", [], "Video name: ", str)
-    send_message(socket, f"Ban {token} {video_name}")
+    send_message(socket_conn, f"Ban {token} {video_name}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "BanSuc":
         logger.info("Banning video Sucessfull")
     elif response == "BanFail":
         logger.error("Banning video Failed")
 
 
-def add_label_routine(socket):
+def add_label_routine(socket_conn: socket.socket):
     video_name = get_terminal_input("", [], "Video name: ", str)
     label = get_terminal_input(
         "Choose label to add",
         ["Under 13", "Under 18", "R rated", "Violance", "May find argumantive"],
     )
-    send_message(socket, f"AddLabel {token} {video_name} {label}")
+    send_message(socket_conn, f"AddLabel {token} {video_name} {label}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "AddLabelSuc":
         logger.info("Label Added to video Sucessfully")
     elif response == "AddLabelFail":
         logger.error("Adding label counter error")
 
 
-def comment_on_video_routine(socket):
+def comment_on_video_routine(socket_conn: socket.socket):
     video_name = get_terminal_input("", [], "Video name: ", str)
     comment = get_terminal_input("", [], "Your Comment: ", str)
-    send_message(socket, f"CommentVideo {token} {video_name} {comment}")
+    send_message(socket_conn, f"CommentVideo {token} {video_name} {comment}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "ReactSuc":
         logger.info("Comment Submitted")
     elif response == "ReactFail":
         logger.error("Comment Fail")
 
 
-def dislike_video_routine(socket):
+def dislike_video_routine(socket_conn: socket.socket):
     video_id = get_terminal_input("", [], "Video name: ", str)
-    send_message(socket, f"DisLike {token} {video_id}")
+    send_message(socket_conn, f"DisLike {token} {video_id}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "ReactSuc":
         logger.info("DisLike Submitted")
     elif response == "ReactFail":
         logger.error("DisLike Fail")
 
 
-def like_video_routine(socket):
+def like_video_routine(socket_conn: socket.socket):
     video_id = get_terminal_input("", [], "Video name: ", str)
-    send_message(socket, f"Like {token} {video_id}")
+    send_message(socket_conn, f"Like {token} {video_id}")
 
-    response = get_network_response(socket)
+    response = get_network_response(socket_conn)
     if response == "ReactSuc":
         logger.info("Like Submitted")
     elif response == "ReactFail":
         logger.error("Like Fail")
 
 
-def upload_file_routine(socket):
+def upload_file_routine(socket_conn: socket.socket):
     video_path = get_terminal_input("", [], "Video Path: ", str)
     # TODO what's the filename that should be sent to server
-    send_message(socket, f"UploadVideo {token} {Path(video_path).name}")
-    response = get_network_response(socket)
-    if response == "Upload":
-        send_file(video_path, socket)
+    send_message(socket_conn, f"UploadVideo {token} {Path(video_path).name}")
+    response = get_network_response(socket_conn)
+    if response == "UploadSuc":
+        send_file(video_path, socket_conn)
     elif response == "UploadFail":
         logger.error("Uploading Video failed")
 
-def view_video_routine(socket):
+
+def view_video_routine(socket_conn: socket.socket):
     video_name = get_terminal_input("", [], "Video Name: ", str)
-    send_message(socket, f"ViewVideo {token} {video_name}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"ViewVideo {token} {video_name}")
+    response = get_network_response(socket_conn)
     if response == "View":
         video_player_client = VideoPlayerClient()
-        video_player_client.start(socket)
+        video_player_client.start(socket_conn)
     elif response == "ViewFail":
         logger.error("Viewing Video failed")
 
-def approve_admin_routine(socket):
+
+def approve_admin_routine(socket_conn: socket.socket):
     username = get_terminal_input("", [], "Username: ", str)
-    send_message(socket, f"App {token} {username}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"App {token} {username}")
+    response = get_network_response(socket_conn)
     if response == "AppSuc":
         logger.info(f"Approved {username}")
     elif response == "AppFail":
         logger.error(f"Can't Approve {username}")
 
 
-def new_ticket_routine(socket):
+def new_ticket_routine(socket_conn: socket.socket):
     text = get_terminal_input("", [], "Your Complain: ", str)
-    send_message(socket, f"NewTicket {token} {text}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"NewTicket {token} {text}")
+    response = get_network_response(socket_conn)
     if response == "NewTicketSuc":
         logger.info(f"Ticket Created")
     elif response == "NewTicketFail":
         logger.error(f"Creating ticket has counter error")
 
 
-def answer_ticket_routine(socket):
+def answer_ticket_routine(socket_conn: socket.socket):
     ticket_id = get_terminal_input("", [], "ticket_id: ", int)
     text = get_terminal_input("", [], "Your Comment on ticket: ", str)
-    send_message(socket, f"AnswerTicket {token} {ticket_id} {text}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"AnswerTicket {token} {ticket_id} {text}")
+    response = get_network_response(socket_conn)
     if response == "AnswerTicketSuc":
         logger.info(f"New Comment Added")
     elif response == "AnswerTicketFail":
         logger.error(f"Answering ticket has counter error")
 
 
-def change_ticket_state_routine(socket):
+def change_ticket_state_routine(socket_conn: socket.socket):
     ticket_id = get_terminal_input("", [], "ticket_id: ", int)
     state = get_terminal_input("Choose State", ["New", "Pending", "Solved", "Closed"])
-    send_message(socket, f"ChangeTicketState {token} {ticket_id} {state}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"ChangeTicketState {token} {ticket_id} {state}")
+    response = get_network_response(socket_conn)
     if response == "ChangeTicketStateSuc":
         logger.info(f"Ticket State Changed")
     elif response == "ChangeTicketStateFail":
         logger.error(f"changing ticket state has counter error")
 
 
-def see_all_tickets_routine(socket):
-    send_message(socket, f"GetTickets {token} ")
-    data = s.recv(1024)
+def see_all_tickets_routine(socket_conn: socket.socket):
+    send_message(socket_conn, f"GetTickets {token} ")
+
+    data = transport_receive_message(socket_conn)
 
     if data.startswith(b"GetTicketsSuc"):
         logger.info("Your Tickets:")
-        pickle_data = data[len("GetTicketsSuc ") :]
+        pickle_data = data[len("GetTicketsSuc "):]
 
         target_data = pickle.loads(pickle_data)
         for i in target_data:
@@ -241,11 +242,11 @@ def see_all_tickets_routine(socket):
         logger.error(f"getting all tickets has counter error")
 
 
-def logout_routine(socket):
+def logout_routine(socket_conn: socket.socket):
     global token, rule
 
-    send_message(socket, f"Logout {token}")
-    response = get_network_response(socket)
+    send_message(socket_conn, f"Logout {token}")
+    response = get_network_response(socket_conn)
     if response == "LogoutSuc":
         logger.info("Logout Succesfull")
         rule = token = None
@@ -253,23 +254,23 @@ def logout_routine(socket):
         logger.error("Logout failed")
 
 
-def signup_routine(socket):
+def signup_routine(socket_conn: socket.socket):
     global token, rule
 
-    get_and_send_singup_info(socket)
-    response = get_network_response(socket).split()
-    if response[0] == "SingupSuc":
-        logger.info("Signup Succesfull!")
-    elif response[0] == "SingupFail":
+    get_and_send_signup_info(socket_conn)
+    response = get_network_response(socket_conn).split()
+    if response[0] == "SignupSuc":
+        logger.info("Signup Successful!")
+    elif response[0] == "SignupFail":
         logger.error("Signup Failed!")
 
 
-def login_routine(socket):
+def login_routine(socket_conn: socket.socket):
     global token, rule
 
-    send_login_info(socket)
+    send_login_info(socket_conn)
 
-    response = get_network_response(socket).split()
+    response = get_network_response(socket_conn).split()
     if response[0] == "LoginSuc":
         logger.info("Login Succesfull!")
         token = response[1]
@@ -282,7 +283,7 @@ def login_routine(socket):
             logger.warning("Your user is not approve by manager yet!")
 
 
-def manager_menu(socket):
+def manager_menu(socket_conn: socket.socket):
     inp = get_terminal_input(
         "Welcome To Wetube",
         [
@@ -295,21 +296,21 @@ def manager_menu(socket):
         ],
     )
     if inp == 1:
-        approve_admin_routine(socket)
+        approve_admin_routine(socket_conn)
     elif inp == 2:
-        answer_ticket_routine(socket)
+        answer_ticket_routine(socket_conn)
     elif inp == 3:
-        see_all_tickets_routine(socket)
+        see_all_tickets_routine(socket_conn)
     elif inp == 4:
-        change_ticket_state_routine(socket)
+        change_ticket_state_routine(socket_conn)
     elif inp == 5:
-        logout_routine(socket)
+        logout_routine(socket_conn)
     elif inp == 6:
-        socket.close()
+        socket_conn.close()
         exit()
 
 
-def admin_menu(socket):
+def admin_menu(socket_conn: socket.socket):
     inp = get_terminal_input(
         "Welcome To Wetube",
         [
@@ -327,30 +328,30 @@ def admin_menu(socket):
         ],
     )
     if inp == 1:
-        send_message(socket, "GetAllVideos")
-        print(get_network_response(socket))
+        send_message(socket_conn, "GetAllVideos")
+        print(get_network_response(socket_conn))
     elif inp == 2:
-        ban_user_routine(socket)
+        ban_user_routine(socket_conn)
     elif inp == 3:
-        unstrike_user_routine(socket)
+        unstrike_user_routine(socket_conn)
     elif inp == 4:
-        add_label_routine(socket)
+        add_label_routine(socket_conn)
     elif inp == 5:
-        new_ticket_routine(socket)
+        new_ticket_routine(socket_conn)
     elif inp == 6:
-        answer_ticket_routine(socket)
+        answer_ticket_routine(socket_conn)
     elif inp == 7:
-        see_all_tickets_routine(socket)
+        see_all_tickets_routine(socket_conn)
     elif inp == 8:
-        change_ticket_state_routine(socket)
+        change_ticket_state_routine(socket_conn)
     elif inp == 9:
-        logout_routine(socket)
+        logout_routine(socket_conn)
     elif inp == 10:
-        socket.close()
+        socket_conn.close()
         exit()
 
 
-def user_menu(socket):
+def user_menu(socket_conn: socket.socket):
     inp = get_terminal_input(
         "Welcome To Wetube",
         [
@@ -368,52 +369,52 @@ def user_menu(socket):
         ],
     )
     if inp == 1:
-        upload_file_routine(socket)
+        upload_file_routine(socket_conn)
     elif inp == 2:
-        like_video_routine(socket)
+        like_video_routine(socket_conn)
     elif inp == 3:
-        dislike_video_routine(socket)
+        dislike_video_routine(socket_conn)
     elif inp == 4:
-        comment_on_video_routine(socket)
+        comment_on_video_routine(socket_conn)
     elif inp == 5:
-        new_ticket_routine(socket)
+        new_ticket_routine(socket_conn)
     elif inp == 6:
-        answer_ticket_routine(socket)
+        answer_ticket_routine(socket_conn)
     elif inp == 7:
-        see_all_tickets_routine(socket)
+        see_all_tickets_routine(socket_conn)
     elif inp == 8:
-        send_message(socket, "GetAllVideos")
-        print(get_network_response(socket))
+        send_message(socket_conn, "GetAllVideos")
+        print(get_network_response(socket_conn))
     elif inp == 9:
-        logout_routine(socket)
+        logout_routine(socket_conn)
     elif inp == 10:
-        socket.close()
+        socket_conn.close()
         exit()
     elif inp == 11:
-        view_video_routine(socket)
+        view_video_routine(socket_conn)
 
 
-def user_thread(socket):
+def user_thread(socket_conn: socket.socket):
     global token, rule
 
     if token:
         if rule == Rules.USER:
-            user_menu(socket)
+            user_menu(socket_conn)
         elif rule == Rules.ADMIN:
-            admin_menu(socket)
+            admin_menu(socket_conn)
         elif rule == Rules.MANAGER:
-            manager_menu(socket)
+            manager_menu(socket_conn)
 
     else:
         inp = get_terminal_input("Welcome To Wetube", ["Login", "Signup"])
         if inp == 1:
-            login_routine(socket)
+            login_routine(socket_conn)
         elif inp == 2:
-            signup_routine(socket)
+            signup_routine(socket_conn)
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
+    s.connect((HOST, PROXY_PORT))
     while True:
         try:
             user_thread(s)

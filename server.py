@@ -5,6 +5,9 @@ import pickle
 from threading import Thread
 from dotenv import load_dotenv
 
+from utils.transport import receive_message as transport_receive_message
+from utils.transport import send_message as transport_send_message
+
 from modules.ticket import Text, Ticket, create_ticket
 from modules.video import Video, add_video
 from modules.users import (
@@ -29,12 +32,20 @@ HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
 
 
-def handle_user_reacts(conn, data, req_type):
+def get_message(socket_conn: socket.socket):
+    return transport_receive_message(socket_conn).decode()
+
+
+def send_message(socket_conn: socket.socket, msg):
+    transport_send_message(socket_conn, bytes(msg, "utf-8"))
+
+
+def handle_user_reacts(socket_conn: socket.socket, data, req_type):
     token, video_name = parse_two_part_string(data)
     if is_user_loggeed_in(token):
         video = Video.get_video(video_name)
         if not video:
-            conn.sendall(b"ReactFail")
+            send_message(socket_conn, "ReactFail")
         else:
             if req_type == "Like":
                 video.likes += 1
@@ -43,12 +54,12 @@ def handle_user_reacts(conn, data, req_type):
             elif req_type == "CommentVideo":
                 video.add_comment(User.get_user(token), "".join(data.split()[3:]))
 
-            conn.sendall(b"ReactSuc")
+            send_message(socket_conn, "ReactSuc")
     else:
-        conn.sendall(b"ReactFail")
+        send_message(socket_conn, "ReactFail")
 
 
-def handle_tickets(conn, data, req_type):
+def handle_tickets(socket_conn: socket.socket, data, req_type):
     if req_type == "NewTicket":
         token = data.split()[1]
         user = User.get_user(token)
@@ -57,9 +68,9 @@ def handle_tickets(conn, data, req_type):
             ticket = create_ticket(user)
             ticket.add_chat(Text(user, " ".join(text)))
 
-            conn.sendall(b"NewTicketSuc")
+            send_message(socket_conn, "NewTicketSuc")
         else:
-            conn.sendall(b"NewTicketFail")
+            send_message(socket_conn, "NewTicketFail")
 
     elif req_type == "AnswerTicket":
         token, ticket_id = data.split()[1:3]
@@ -68,9 +79,9 @@ def handle_tickets(conn, data, req_type):
         if user and ticket:
             text = data.split()[3:]
             ticket.add_chat(Text(user, " ".join(text)))
-            conn.sendall(b"AnswerTicketSuc")
+            send_message(socket_conn, "AnswerTicketSuc")
         else:
-            conn.sendall(b"AnswerTicketFail")
+            send_message(socket_conn, "AnswerTicketFail")
 
     elif req_type == "ChangeTicketState":
         token, ticket_id, state = parse_three_part_string(data)
@@ -78,9 +89,9 @@ def handle_tickets(conn, data, req_type):
         ticket = Ticket.get_ticket(int(ticket_id))
         if user and ticket:
             ticket.change_state(int(state))
-            conn.sendall(b"ChangeTicketStateSuc")
+            send_message(socket_conn, "ChangeTicketStateSuc")
         else:
-            conn.sendall(b"ChangeTicketStateFail")
+            send_message(socket_conn, "ChangeTicketStateFail")
 
     elif req_type == "GetTickets":
         token = parse_one_part_string(data)
@@ -89,66 +100,60 @@ def handle_tickets(conn, data, req_type):
         if user:
             tickets = Ticket.get_user_tickets(user)
             dump = pickle.dumps(tickets)
-            conn.sendall(bytes(f"GetTicketsSuc ", "utf-8") + dump)
+            transport_send_message(socket_conn, bytes(f"GetTicketsSuc ", "utf-8") + dump)
         else:
-            conn.sendall(b"GetTicketsFail")
+            send_message(socket_conn, "GetTicketsFail")
 
 
-def handle_user_auth(conn, data, req_type):
+def handle_user_auth(socket_conn: socket.socket, data, req_type):
     if req_type == "Login":
         username, password = parse_two_part_string(data)
         user = login_user(username, password)
         if user:
             if user.is_approved:
-                conn.sendall(bytes(f"LoginSuc {user.id} {user.access_level}", "utf-8"))
+                send_message(socket_conn, f"LoginSuc {user.id} {user.access_level}")
             else:
-                conn.sendall(b"LoginFail UserNotApprove")
+                send_message(socket_conn, "LoginFail UserNotApprove")
         else:
-            conn.sendall(b"LoginFail UserNotFound")
+            send_message(socket_conn, "LoginFail UserNotFound")
 
     elif req_type == "Signup":
         username, password, user_type = parse_three_part_string(data)
         user = signup_user(username, password, int(user_type))
         if user:
-            conn.sendall(bytes(f"SingupSuc", "utf-8"))
+            send_message(socket_conn, "SignupSuc")
         else:
-            conn.sendall(b"SingupFail")
+            send_message(socket_conn, "SignupFail")
 
     elif req_type == "Logout":
         token = parse_one_part_string(data)
         if logout_user(token):
-            conn.sendall(b"LogoutSuc")
+            send_message(socket_conn, "LogoutSuc")
         else:
-            conn.sendall(b"LogoutFail")
+            send_message(socket_conn, "LogoutFail")
 
 
-def handle_video_uploading(conn, data):
+def handle_video_uploading(socket_conn: socket.socket, data):
     token, video_name = parse_two_part_string(data)
     user = User.get_user(token)
     if user:
-        conn.sendall(b"Upload")
+        send_message(socket_conn, "UploadSuc")
         os.makedirs("videos", exist_ok=True)
         with open(os.path.join("videos", video_name), "wb") as file:
-            while True:
-                bytes_read = conn.recv(1024)
-                if not bytes_read:
-                    break
-                try:
-                    if bytes_read.decode("utf-8") == "VideoFinished":
-                        break
-                except:
-                    pass
+            bytes_read = transport_receive_message(socket_conn)
+            file.write(bytes_read)
 
-                file.write(bytes_read)
-                # conn.sendall(b"OK")
+            send_message(socket_conn, "ok")
+            finished_message = get_message(socket_conn)
+            assert finished_message == "VideoFinished"
 
             add_video(Video(video_name, user))
-            # conn.sendall(b"OK")
+            send_message(socket_conn, "ok")
     else:
-        conn.sendall(b"UploadFail")
+        send_message(socket_conn, "UploadFail")
 
 
-def handle_video_streaming(conn, data):
+def handle_video_streaming(socket_conn: socket.socket, data):
     token, video_name = parse_two_part_string(data)
 
     video = Video.get_video(video_name)
@@ -156,91 +161,91 @@ def handle_video_streaming(conn, data):
 
     if user and video:
         video_player_server = VideoPlayerServer()
-        conn.sendall(b"View")
-        video_player_server.start(conn, video)
+        send_message(socket_conn, "View")
+        video_player_server.start(socket_conn, video)
     else:
-        conn.sendall(b"ViewFail")
+        send_message(socket_conn, "ViewFail")
 
 
-def handle_adding_label_to_video(conn, data):
+def handle_adding_label_to_video(socket_conn: socket.socket, data):
     token, video_name, label_id = parse_three_part_string(data)
     video = Video.get_video(video_name)
     if is_user_admin_or_manager(token) and video:
         video.add_label(int(label_id))
-        conn.sendall(b"AddLabelSuc")
+        send_message(socket_conn, "AddLabelSuc")
     else:
-        conn.sendall(b"AddLabelFail")
+        send_message(socket_conn, "AddLabelFail")
 
 
-def handle_approving_user(conn, data):
+def handle_approving_user(socket_conn: socket.socket, data):
     token, target_username = parse_two_part_string(data)
     if is_user_admin_or_manager(token):
         user = User.get_user_by_username(target_username)
         if user:
             user.is_approved = True
-            conn.sendall(b"AppSuc")
+            send_message(socket_conn, "AppSuc")
         else:
-            conn.sendall(b"AppFail")
+            send_message(socket_conn, "AppFail")
     else:
-        conn.sendall(b"AppFail")
+        send_message(socket_conn, "AppFail")
 
 
-def handle_unstricking_user(conn, data):
+def handle_unstricking_user(socket_conn: socket.socket, data):
     token, target_username = parse_two_part_string(data)
     if is_user_admin_or_manager(token):
         user = User.get_user_by_username(target_username)
         if user:
             user.is_striked = True
-            conn.sendall(b"UnstrikeSuc")
+            send_message(socket_conn, "UnstrikeSuc")
         else:
-            conn.sendall(b"UnstrikeFail")
+            send_message(socket_conn, "UnstrikeFail")
     else:
-        conn.sendall(b"UnstrikeFail")
+        send_message(socket_conn, "UnstrikeFail")
 
 
-def handle_banning_video(conn, data):
+def handle_banning_video(socket_conn: socket.socket, data):
     token, video_name = parse_two_part_string(data)
     if is_user_admin_or_manager(token):
         video = Video.get_video(video_name)
         if video:
             video.ban()
-            conn.sendall(b"BanSuc")
+            send_message(socket_conn, "BanSuc")
         else:
-            conn.sendall(b"BanFail")
+            send_message(socket_conn, "BanFail")
     else:
-        conn.sendall(b"BanFail")
+        send_message(socket_conn, "BanFail")
 
 
-def thread_runner(conn: socket.socket):
+def thread_runner(socket_conn: socket.socket):
     while True:
-        data = conn.recv(1024).decode("utf-8")
+        data = get_message(socket_conn)
         print(f"Received: {data}")
         if data == "":
             break
         req_type = data.split()[0]
 
         if req_type in ["Login", "Signup", "Logout"]:
-            handle_user_auth(conn, data, req_type)
+            handle_user_auth(socket_conn, data, req_type)
         elif req_type in ["Like", "DisLike", "CommentVideo"]:
-            handle_user_reacts(conn, data, req_type)
+            handle_user_reacts(socket_conn, data, req_type)
 
         elif req_type == "GetAllVideos":
             videos = Video.get_all_unband_videos()
-            conn.sendall(bytes(videos, "utf-8"))
+            send_message(socket_conn, videos)
 
         elif req_type == "UploadVideo":
-            handle_video_uploading(conn, data)
+            handle_video_uploading(socket_conn, data)
         elif req_type == "ViewVideo":
-            handle_video_streaming(conn, data)
+            handle_video_streaming(socket_conn, data)
         elif req_type == "AddLabel":
-            handle_adding_label_to_video(conn, data)
+            handle_adding_label_to_video(socket_conn, data)
 
         elif req_type == "Ban":
-            handle_banning_video(conn, data)
+            handle_banning_video(socket_conn, data)
         elif req_type == "Unstrike":
-            handle_unstricking_user(conn, data)
+            handle_unstricking_user(socket_conn, data)
         elif req_type == "App":
-            handle_approving_user(conn, data)
+            handle_approving_user(socket_conn, data)
 
         elif req_type in [
             "NewTicket",
@@ -248,7 +253,7 @@ def thread_runner(conn: socket.socket):
             "ChangeTicketState",
             "GetTickets",
         ]:
-            handle_tickets(conn, data, req_type)
+            handle_tickets(socket_conn, data, req_type)
 
 
 def accept_connections():
