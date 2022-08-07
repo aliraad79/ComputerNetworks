@@ -76,21 +76,11 @@ def send_file(file_path: str, socket) -> None:
     logger.info("Sending ..........")
     with open(file_path, "rb") as file:
         socket.sendfile(file)
-        # while True:
-        #     part_of_file = file.read(1024)
-        #     if not part_of_file:
-        #         break
-        #     socket.sendall(part_of_file)
-        #     conformation = socket.recv(1024).decode("utf-8")
-        #     if conformation == "OK":
-        #         pass
-
 
     # TODO: there must be a better way than this
     sleep(1)
     socket.sendall(b"VideoFinished")
-    print("video finished")
-    # conformation = socket.recv(1024).decode("utf-8")
+    logger.info("video uploading finished")
 
 
 def unstrike_user_routine(socket):
@@ -174,6 +164,7 @@ def upload_file_routine(socket):
     elif response == "UploadFail":
         logger.error("Uploading Video failed")
 
+
 def view_video_routine(socket):
     video_name = get_terminal_input("", [], "Video Name: ", str)
     send_message(socket, f"ViewVideo {token} {video_name}")
@@ -183,6 +174,7 @@ def view_video_routine(socket):
         video_player_client.start(socket)
     elif response == "ViewFail":
         logger.error("Viewing Video failed")
+
 
 def approve_admin_routine(socket):
     username = get_terminal_input("", [], "Username: ", str)
@@ -314,6 +306,7 @@ def admin_menu(socket):
         "Welcome To Wetube",
         [
             "See all videos",
+            "View video",
             "Ban Video",
             "Unstrike User",
             "Add label to video",
@@ -323,29 +316,30 @@ def admin_menu(socket):
             "Change Ticket State",
             "Logout",
             "Disconnect",
-            # view video
         ],
     )
     if inp == 1:
         send_message(socket, "GetAllVideos")
         print(get_network_response(socket))
     elif inp == 2:
-        ban_user_routine(socket)
+        view_video_routine(socket)
     elif inp == 3:
-        unstrike_user_routine(socket)
+        ban_user_routine(socket)
     elif inp == 4:
-        add_label_routine(socket)
+        unstrike_user_routine(socket)
     elif inp == 5:
-        new_ticket_routine(socket)
+        add_label_routine(socket)
     elif inp == 6:
-        answer_ticket_routine(socket)
+        new_ticket_routine(socket)
     elif inp == 7:
-        see_all_tickets_routine(socket)
+        answer_ticket_routine(socket)
     elif inp == 8:
-        change_ticket_state_routine(socket)
+        see_all_tickets_routine(socket)
     elif inp == 9:
-        logout_routine(socket)
+        change_ticket_state_routine(socket)
     elif inp == 10:
+        logout_routine(socket)
+    elif inp == 11:
         socket.close()
         exit()
 
@@ -355,6 +349,7 @@ def user_menu(socket):
         "Welcome To Wetube",
         [
             "Upload Video",
+            "View video",
             "Like video",
             "DisLike video",
             "Comment On video",
@@ -364,33 +359,32 @@ def user_menu(socket):
             "See all videos",
             "Logout",
             "Disconnect",
-            "View video",
         ],
     )
     if inp == 1:
         upload_file_routine(socket)
     elif inp == 2:
-        like_video_routine(socket)
+        view_video_routine(socket)
     elif inp == 3:
-        dislike_video_routine(socket)
+        like_video_routine(socket)
     elif inp == 4:
-        comment_on_video_routine(socket)
+        dislike_video_routine(socket)
     elif inp == 5:
-        new_ticket_routine(socket)
+        comment_on_video_routine(socket)
     elif inp == 6:
-        answer_ticket_routine(socket)
+        new_ticket_routine(socket)
     elif inp == 7:
-        see_all_tickets_routine(socket)
+        answer_ticket_routine(socket)
     elif inp == 8:
+        see_all_tickets_routine(socket)
+    elif inp == 9:
         send_message(socket, "GetAllVideos")
         print(get_network_response(socket))
-    elif inp == 9:
-        logout_routine(socket)
     elif inp == 10:
+        logout_routine(socket)
+    elif inp == 11:
         socket.close()
         exit()
-    elif inp == 11:
-        view_video_routine(socket)
 
 
 def user_thread(socket):
