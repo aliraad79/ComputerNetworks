@@ -1,3 +1,4 @@
+from datetime import datetime
 import socket
 import os
 import pickle
@@ -27,6 +28,13 @@ load_dotenv()
 
 HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
+
+ddos_list = {}
+black_list = []
+
+rate = 20
+per = 60
+last_check = datetime.now()
 
 
 def handle_user_reacts(conn, data, req_type):
@@ -211,7 +219,35 @@ def handle_banning_video(conn, data):
         conn.sendall(b"BanFail")
 
 
-def thread_runner(conn: socket.socket):
+def prevent_ddos(address, data):
+    for i in data.split("\0"):
+        if address not in ddos_list.keys():
+            ddos_list[address] = [last_check, rate]
+
+        current = datetime.now()
+        time_passed = (current - ddos_list[address][0]).seconds
+        ddos_list[address][0] = current
+        ddos_list[address][1] += time_passed * (rate / per)
+
+        if ddos_list[address][1] > rate:
+            ddos_list[address][1] = rate
+
+        allowance = ddos_list[address][1]
+        if allowance < 1.0:
+            # Block ip
+            print(f"{address} IP get blocked because of ddos")
+            black_list.append(address)
+        else:
+            # It is ok
+            ddos_list[address][1] -= 1.0
+
+
+def thread_runner(conn: socket.socket, address):
+    if address in black_list:
+        conn.close()
+        print(f"{address} IP is blocked.")
+        return
+
     while True:
         data = conn.recv(1024).decode("utf-8")
         print(f"Received: {data}")
@@ -249,6 +285,8 @@ def thread_runner(conn: socket.socket):
             "GetTickets",
         ]:
             handle_tickets(conn, data, req_type)
+        elif data.startswith("Ping"):
+            prevent_ddos(address, data)
 
 
 def accept_connections():
@@ -257,7 +295,7 @@ def accept_connections():
         s.listen(10)
         while True:
             conn, addr = s.accept()
-            Thread(target=thread_runner, args=(conn,)).start()
+            Thread(target=thread_runner, args=(conn, addr)).start()
 
 
 if __name__ == "__main__":
