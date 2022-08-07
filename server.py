@@ -1,3 +1,4 @@
+from datetime import datetime
 import socket
 import os
 import pickle
@@ -8,7 +9,7 @@ from dotenv import load_dotenv
 from utils.transport import receive_message as transport_receive_message
 from utils.transport import send_message as transport_send_message
 
-from modules.ticket import Text, Ticket, create_ticket
+from modules.ticket import Text, Ticket, TicketState, create_ticket
 from modules.video import Video, add_video
 from modules.users import (
     User,
@@ -21,6 +22,7 @@ from modules.users import (
 )
 from utils.serilizers import (
     parse_one_part_string,
+    parse_two_part_input,
     parse_two_part_string,
     parse_three_part_string,
 )
@@ -30,6 +32,13 @@ load_dotenv()
 
 HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
+
+ddos_list = {}
+black_list = []
+
+rate = 20
+per = 60
+last_check = datetime.now()
 
 
 def get_message(socket_conn: socket.socket):
@@ -41,7 +50,7 @@ def send_message(socket_conn: socket.socket, msg):
 
 
 def handle_user_reacts(socket_conn: socket.socket, data, req_type):
-    token, video_name = parse_two_part_string(data)
+    token, video_name = parse_two_part_input(data)
     if is_user_loggeed_in(token):
         video = Video.get_video(video_name)
         if not video:
@@ -76,7 +85,7 @@ def handle_tickets(socket_conn: socket.socket, data, req_type):
         token, ticket_id = data.split()[1:3]
         user = User.get_user(token)
         ticket = Ticket.get_ticket(int(ticket_id))
-        if user and ticket:
+        if user and ticket and ticket.state != TicketState.CLOSED:
             text = data.split()[3:]
             ticket.add_chat(Text(user, " ".join(text)))
             send_message(socket_conn, "AnswerTicketSuc")
@@ -136,7 +145,7 @@ def handle_user_auth(socket_conn: socket.socket, data, req_type):
 def handle_video_uploading(socket_conn: socket.socket, data):
     token, video_name = parse_two_part_string(data)
     user = User.get_user(token)
-    if user:
+    if user and not user.is_striked:
         send_message(socket_conn, "UploadSuc")
         os.makedirs("videos", exist_ok=True)
         with open(os.path.join("videos", video_name), "wb") as file:
@@ -215,8 +224,30 @@ def handle_banning_video(socket_conn: socket.socket, data):
     else:
         send_message(socket_conn, "BanFail")
 
+def prevent_ddos(address, data):
+    for i in data.split("\0"):
+        if address not in ddos_list.keys():
+            ddos_list[address] = [last_check, rate]
 
-def thread_runner(socket_conn: socket.socket):
+        current = datetime.now()
+        time_passed = (current - ddos_list[address][0]).seconds
+        ddos_list[address][0] = current
+        ddos_list[address][1] += time_passed * (rate / per)
+
+        if ddos_list[address][1] > rate:
+            ddos_list[address][1] = rate
+
+        allowance = ddos_list[address][1]
+        if allowance < 1.0:
+            # Block ip
+            print(f"{address} IP get blocked because of ddos")
+            black_list.append(address)
+        else:
+            # It is ok
+            ddos_list[address][1] -= 1.0
+
+
+def thread_runner(socket_conn: socket.socket, address):
     while True:
         data = get_message(socket_conn)
         print(f"Received: {data}")
@@ -254,6 +285,8 @@ def thread_runner(socket_conn: socket.socket):
             "GetTickets",
         ]:
             handle_tickets(socket_conn, data, req_type)
+        elif data.startswith("Ping"):
+            prevent_ddos(address, data)
 
 
 def accept_connections():
@@ -262,7 +295,7 @@ def accept_connections():
         s.listen(10)
         while True:
             conn, addr = s.accept()
-            Thread(target=thread_runner, args=(conn,)).start()
+            Thread(target=thread_runner, args=(conn, addr)).start()
 
 
 if __name__ == "__main__":

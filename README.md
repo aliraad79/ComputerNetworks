@@ -26,6 +26,6 @@ When seeing video its not just downloding and viewing it. You stream the video f
 * For resuming video stream press `r`
 
 ## Contributors
-- Alireza Ziaee
+- Alireza Ziaee @alrz1999
 - Ali Javanmard
-- Ali Ahmadi
+- Ali Ahmadi @aliraad79

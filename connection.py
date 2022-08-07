@@ -20,6 +20,7 @@ PROXY_PORT = int(os.getenv("PROXY_PORT"))
 PORT = int(os.getenv("PORT"))
 logger = logger_config()
 
+
 token = None
 rule = None
 
@@ -39,7 +40,7 @@ class ChossableLabel(Enum):
 
 
 def get_terminal_input(
-        msg, options, get_input_message="Enter your choice: ", input_type=int
+    msg, options, get_input_message="Enter your choice: ", input_type=int
 ):
     if msg != "":
         logger.info(msg)
@@ -315,6 +316,7 @@ def admin_menu(socket_conn: socket.socket):
         "Welcome To Wetube",
         [
             "See all videos",
+            "View video",
             "Ban Video",
             "Unstrike User",
             "Add label to video",
@@ -324,29 +326,30 @@ def admin_menu(socket_conn: socket.socket):
             "Change Ticket State",
             "Logout",
             "Disconnect",
-            # view video
         ],
     )
     if inp == 1:
         send_message(socket_conn, "GetAllVideos")
         print(get_network_response(socket_conn))
     elif inp == 2:
-        ban_user_routine(socket_conn)
+        view_video_routine(socket_conn)
     elif inp == 3:
-        unstrike_user_routine(socket_conn)
+        ban_user_routine(socket_conn)
     elif inp == 4:
-        add_label_routine(socket_conn)
+        unstrike_user_routine(socket_conn)
     elif inp == 5:
-        new_ticket_routine(socket_conn)
+        add_label_routine(socket_conn)
     elif inp == 6:
-        answer_ticket_routine(socket_conn)
+        new_ticket_routine(socket_conn)
     elif inp == 7:
-        see_all_tickets_routine(socket_conn)
+        answer_ticket_routine(socket_conn)
     elif inp == 8:
-        change_ticket_state_routine(socket_conn)
+        see_all_tickets_routine(socket_conn)
     elif inp == 9:
-        logout_routine(socket_conn)
+        change_ticket_state_routine(socket_conn)
     elif inp == 10:
+        logout_routine(socket_conn)
+    elif inp == 11:
         socket_conn.close()
         exit()
 
@@ -356,6 +359,7 @@ def user_menu(socket_conn: socket.socket):
         "Welcome To Wetube",
         [
             "Upload Video",
+            "View video",
             "Like video",
             "DisLike video",
             "Comment On video",
@@ -365,33 +369,32 @@ def user_menu(socket_conn: socket.socket):
             "See all videos",
             "Logout",
             "Disconnect",
-            "View video",
         ],
     )
     if inp == 1:
         upload_file_routine(socket_conn)
     elif inp == 2:
-        like_video_routine(socket_conn)
+        view_video_routine(socket_conn)
     elif inp == 3:
-        dislike_video_routine(socket_conn)
+        like_video_routine(socket_conn)
     elif inp == 4:
-        comment_on_video_routine(socket_conn)
+        dislike_video_routine(socket_conn)
     elif inp == 5:
-        new_ticket_routine(socket_conn)
+        comment_on_video_routine(socket_conn)
     elif inp == 6:
-        answer_ticket_routine(socket_conn)
+        new_ticket_routine(socket_conn)
     elif inp == 7:
-        see_all_tickets_routine(socket_conn)
+        answer_ticket_routine(socket_conn)
     elif inp == 8:
+        see_all_tickets_routine(socket_conn)
+    elif inp == 9:
         send_message(socket_conn, "GetAllVideos")
         print(get_network_response(socket_conn))
-    elif inp == 9:
-        logout_routine(socket_conn)
     elif inp == 10:
+        logout_routine(socket_conn)
+    elif inp == 11:
         socket_conn.close()
         exit()
-    elif inp == 11:
-        view_video_routine(socket_conn)
 
 
 def user_thread(socket_conn: socket.socket):
@@ -414,7 +417,7 @@ def user_thread(socket_conn: socket.socket):
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PROXY_PORT))
+    s.connect((HOST, PORT))
     while True:
         try:
             user_thread(s)

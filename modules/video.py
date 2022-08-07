@@ -29,12 +29,17 @@ class Video:
         self.comments.append(Comment(user, comment))
 
     def add_label(self, label_id: int):
-        self.labels.append(Label(label_id))
+        if Label(label_id) not in self.labels:
+            self.labels.append(Label(label_id))
 
     def ban(self):
         self.is_ban = True
-        # TODO:
-        # handle user striking here
+        banned_video = 1
+        for video in videos:
+            if video.name != self.name and video.owner == self.owner and video.is_ban:
+                banned_video += 1
+        if banned_video >= 2:
+            self.owner.is_striked = True
 
     @classmethod
     def get_video(cls, video_name):
@@ -52,8 +57,11 @@ class Video:
         return f"Videos:\n" + f"\n".join([str(i) for i in videos if not i.is_ban])
 
     def __str__(self) -> str:
-        return f"{self.name} {self.likes}|{self.dislikes} Comments: " + "\n".join(
-            [str(i) for i in self.comments]
+        return (
+            f"{self.name} Likes:{self.likes} DisLikes:{self.dislikes} Comments: \n\t"
+            + "\n\t".join([str(i) for i in self.comments])
+            + "\nLabels: \n\t"
+            + "\n\t".join([i.name for i in self.labels])
         )
 
 
