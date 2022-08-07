@@ -6,7 +6,7 @@ import pickle
 from threading import Thread
 from dotenv import load_dotenv
 
-from modules.ticket import Text, Ticket, create_ticket
+from modules.ticket import Text, Ticket, TicketState, create_ticket
 from modules.video import Video, add_video
 from modules.users import (
     User,
@@ -19,6 +19,7 @@ from modules.users import (
 )
 from utils.serilizers import (
     parse_one_part_string,
+    parse_two_part_input,
     parse_two_part_string,
     parse_three_part_string,
 )
@@ -38,7 +39,7 @@ last_check = datetime.now()
 
 
 def handle_user_reacts(conn, data, req_type):
-    token, video_name = parse_two_part_string(data)
+    token, video_name = parse_two_part_input(data)
     if is_user_loggeed_in(token):
         video = Video.get_video(video_name)
         if not video:
@@ -73,7 +74,7 @@ def handle_tickets(conn, data, req_type):
         token, ticket_id = data.split()[1:3]
         user = User.get_user(token)
         ticket = Ticket.get_ticket(int(ticket_id))
-        if user and ticket:
+        if user and ticket and ticket.state != TicketState.CLOSED:
             text = data.split()[3:]
             ticket.add_chat(Text(user, " ".join(text)))
             conn.sendall(b"AnswerTicketSuc")
@@ -133,7 +134,7 @@ def handle_user_auth(conn, data, req_type):
 def handle_video_uploading(conn, data):
     token, video_name = parse_two_part_string(data)
     user = User.get_user(token)
-    if user:
+    if user and not user.is_striked:
         conn.sendall(b"Upload")
         os.makedirs("videos", exist_ok=True)
         with open(os.path.join("videos", video_name), "wb") as file:
