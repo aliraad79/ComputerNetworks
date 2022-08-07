@@ -17,6 +17,7 @@ class VideoPlayerClient:
             frame_bytes = receive_message(socket_connection)
             if frame_bytes.decode('utf-8', errors='ignore') == "close-video-stream":
                 cv2.destroyAllWindows()
+                send_message(socket_connection, bytes("exit", 'utf-8'))
                 break
             frame = pickle.loads(frame_bytes)
             frame_image = cv2.imdecode(frame, cv2.IMREAD_COLOR)
@@ -51,8 +52,8 @@ class VideoPlayerServer:
 
         sender_thread.join()
         self.finished = True
-        receiver_thread.join()
         send_message(socket_connection, bytes("close-video-stream", 'utf-8'))
+        receiver_thread.join()
 
     def start_handling_user_commands(self, socket_connection: socket.socket):
         while True:
