@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from utils.transport import receive_message as transport_receive_message
 from utils.transport import send_message as transport_send_message
+from utils.transport import receive_message_chunked
 
 from modules.ticket import Text, Ticket, TicketState, create_ticket
 from modules.video import Video, add_video
@@ -149,8 +150,8 @@ def handle_video_uploading(socket_conn: socket.socket, data):
         send_message(socket_conn, "UploadSuc")
         os.makedirs("videos", exist_ok=True)
         with open(os.path.join("videos", video_name), "wb") as file:
-            bytes_read = transport_receive_message(socket_conn)
-            file.write(bytes_read)
+            for bytes_list in receive_message_chunked(socket_conn):
+                file.write(bytes_list)
 
             send_message(socket_conn, "ok")
             finished_message = get_message(socket_conn)
@@ -259,18 +260,15 @@ def thread_runner(socket_conn: socket.socket, address):
             handle_user_auth(socket_conn, data, req_type)
         elif req_type in ["Like", "DisLike", "CommentVideo"]:
             handle_user_reacts(socket_conn, data, req_type)
-
         elif req_type == "GetAllVideos":
             videos = Video.get_all_unband_videos()
             send_message(socket_conn, videos)
-
         elif req_type == "UploadVideo":
             handle_video_uploading(socket_conn, data)
         elif req_type == "ViewVideo":
             handle_video_streaming(socket_conn, data)
         elif req_type == "AddLabel":
             handle_adding_label_to_video(socket_conn, data)
-
         elif req_type == "Ban":
             handle_banning_video(socket_conn, data)
         elif req_type == "Unstrike":

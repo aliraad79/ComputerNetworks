@@ -1,6 +1,7 @@
 import socket
 import pickle
 import os
+import struct
 
 from enum import Enum
 from time import sleep
@@ -77,7 +78,8 @@ def get_and_send_signup_info(socket_conn: socket.socket):
 def send_file(file_path: str, socket_conn: socket.socket) -> None:
     logger.info("Sending ..........")
     with open(file_path, "rb") as file:
-        os.path.getsize(file.name)
+        file_size = os.path.getsize(file_path)
+        socket_conn.sendall(struct.pack("Q", file_size))
         socket_conn.sendfile(file)
 
     sleep(1)
