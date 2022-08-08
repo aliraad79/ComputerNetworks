@@ -69,13 +69,13 @@ def thread_runner(client_socket: socket.socket, server_socket: socket.socket,  a
 
 
 if __name__ == "__main__":
-    with server_socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.connect((HOST, PORT))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 client_socket.bind((HOST, PROXY_PORT))
-                client_socket.close(10)
+                client_socket.listen(10)
 
                 while True:
                     conn, addr = client_socket.accept()
