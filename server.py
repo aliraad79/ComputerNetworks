@@ -220,7 +220,7 @@ def handle_banning_video(conn, data):
         conn.sendall(b"BanFail")
 
 
-def prevent_ddos(address, data):
+def prevent_ddos_attack_attack(address, data):
     for i in data.split("\0"):
         if address not in ddos_list.keys():
             ddos_list[address] = [last_check, rate]
@@ -287,7 +287,7 @@ def thread_runner(conn: socket.socket, address):
         ]:
             handle_tickets(conn, data, req_type)
         elif data.startswith("Ping"):
-            prevent_ddos(address, data)
+            prevent_ddos_attack_attack(address, data)
 
 
 def accept_connections():
