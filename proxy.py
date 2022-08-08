@@ -46,3 +46,23 @@ def proxy_request(server_socket, client_socket, data):
     server_socket.sendall(data)
     server_data = server_socket.recv(1024)
     client_socket.sendall(server_data)
+
+
+def thread_runner(client_socket: socket.socket, server_socket: socket.socket,  address):
+    while True:
+        data = client_socket.recv(1024)
+        print(f"Proxy Received: {data}")
+        if data == "":
+            break
+
+        if address in black_list:
+            print(f"{address} is Blocked")
+            break
+
+        try:
+            if data.decode("utf-8").startswith("Ping"):
+                prevent_ddos_attack(address, data)
+            else:
+                proxy_request(server_socket, client_socket, data)
+        except:
+            proxy_request(server_socket, client_socket, data)
