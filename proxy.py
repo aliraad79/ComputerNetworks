@@ -52,18 +52,35 @@ def thread_runner(client_socket: socket.socket, server_socket: socket.socket,  a
     while True:
         data = client_socket.recv(1024)
         print(f"Proxy Received: {data}")
+        if data == "":
+            break
 
         if address in black_list:
             print(f"{address} is Blocked")
-            break
-
-        if data == "":
             break
 
         try:
             if data.decode("utf-8").startswith("Ping"):
                 prevent_ddos_attack(address, data)
             else:
-                proxy_request(client_socket, server_socket, data)
+                proxy_request(server_socket, client_socket, data)
         except:
-            proxy_request(client_socket, server_socket, data)
+            proxy_request(server_socket, client_socket, data)
+
+
+if __name__ == "__main__":
+    with server_socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.connect((HOST, PORT))
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+                client_socket.bind((HOST, PROXY_PORT))
+                client_socket.close(10)
+
+                while True:
+                    conn, addr = client_socket.accept()
+                    Thread(
+                        target=thread_runner, args=(server_socket, conn, addr)
+                    ).start()
+        except ConnectionResetError:
+            server_socket.close()
